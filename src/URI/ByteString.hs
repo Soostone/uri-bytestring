@@ -9,10 +9,8 @@ module URI.ByteString where
 
 -------------------------------------------------------------------------------
 import           Control.Error
-import           Data.Aeson
 import           Data.ByteString       (ByteString)
 import           Data.Text             (Text)
-import qualified Data.Text             as T
 import           Text.Regex.PCRE.Light
 -------------------------------------------------------------------------------
 
