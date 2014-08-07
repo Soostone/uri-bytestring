@@ -1,0 +1,3 @@
+* TODO heirpart enhancements
+* TODO distinguish malformed ip addresses from domains
+* TODO switch over lots of internals to char8 if safe. not sure yet
