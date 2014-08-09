@@ -1,3 +1,11 @@
-* TODO heirpart enhancements
-* TODO distinguish malformed ip addresses from domains
+* heirpart enhancements
+** TODO IPV6 Parsing
+** TODO IPVFuture Parsing
+** TODO distinguish malformed ip addresses from domains
 * TODO more complete test suite
+** TODO failure cases
+** TODO copy test suite from another project
+* DONE custom read of URIParseError
+  CLOSED: [2014-08-09 Sat 16:08]
+* DONE quickcheck URIParseError read/show cycle
+  CLOSED: [2014-08-09 Sat 16:10]

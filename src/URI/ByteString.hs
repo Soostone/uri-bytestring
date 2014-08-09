@@ -1,11 +1,8 @@
-{-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE NoMonomorphismRestriction  #-}
 {-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE TemplateHaskell            #-}
 
 module URI.ByteString where
 
@@ -15,6 +12,7 @@ import           Control.DeepSeq.Generics
 import           Control.Error
 import           Control.Monad
 import           GHC.Generics
+import           GHC.Read
 import           Data.List (delete)
 import           Data.Monoid
 import           Data.Attoparsec.ByteString
@@ -23,6 +21,7 @@ import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import           Data.Word
 import           Network.HTTP.Types.URI (urlDecode)
+import           Text.Read.Lex
 -------------------------------------------------------------------------------
 
 
@@ -85,8 +84,26 @@ data URIParseError = MalformedSchema SchemaError
                    | MalformedPort
                    | MalformedPath
                    | IncompleteInput
-                   | OtherError String deriving (Show, Eq, Read, Generic)
---TODO; custom w/ othererror fallback
+                   | OtherError String deriving (Show, Eq, Generic)
+
+instance Read URIParseError where
+  readPrec = parens $ do
+    tok <- lexP
+    case tok of
+      String s -> return $ OtherError s
+      Ident s  -> parseFallback s
+      _        -> fail "no parse"
+    where
+      parseFallback "MalformedSchema"   = MalformedSchema <$> readPrec
+      parseFallback "MalformedUserInfo" = return MalformedUserInfo
+      parseFallback "MalformedQuery"    = return MalformedQuery
+      parseFallback "MalformedFragment" = return MalformedFragment
+      parseFallback "MalformedHost"     = return MalformedHost
+      parseFallback "MalformedPort"     = return MalformedPort
+      parseFallback "MalformedPath"     = return MalformedPath
+      parseFallback "IncompleteInput"   = return IncompleteInput
+      parseFallback "OtherError"        = OtherError <$> readPrec
+      parseFallback _                   = fail "no parse"
 
 instance NFData URIParseError
 
@@ -115,9 +132,22 @@ schemeParser = do
 
 --TODO: handle absolute, noscheme, empty
 heirPartParser :: URIParser (Maybe Authority, ByteString)
-heirPartParser = authWithPathParser
-  where
-    authWithPathParser = string' "//" *> ((,) <$> mAuthorityParser <*> pathParser)
+heirPartParser = authWithPathParser <|>
+                 pathAbsoluteParser <|>
+                 pathRootlessParser <|>
+                 pathEmptyParser
+
+authWithPathParser :: URIParser (Maybe Authority, ByteString)
+authWithPathParser = string' "//" *> ((,) <$> mAuthorityParser <*> pathParser)
+
+pathAbsoluteParser :: URIParser (Maybe Authority, ByteString)
+pathAbsoluteParser = string' "/" *> pathRootlessParser
+
+pathRootlessParser :: URIParser (Maybe Authority, ByteString)
+pathRootlessParser = (,) <$> pure Nothing <*> pathParser1
+
+pathEmptyParser :: URIParser (Maybe Authority, ByteString)
+pathEmptyParser = undefined
 
 mAuthorityParser :: URIParser (Maybe Authority)
 mAuthorityParser = mParse authorityParser
@@ -171,7 +201,7 @@ ipV4Parser = mconcat <$> sequence [ decOctet
     dot = string "."
 
 regNameParser :: Parser ByteString
-regNameParser = urlDecode' <$> (A.takeWhile1 $ inClass validForRegName)
+regNameParser = urlDecode' <$> A.takeWhile1 (inClass validForRegName)
   where
     validForRegName = unreserved ++ pctEncoded ++ subDelims
 
@@ -181,10 +211,16 @@ mPortParser = word8' colon `thenJust` portParser
 portParser :: URIParser Port
 portParser = (Port <$> A.takeWhile1 isDigit) `orFailWith` MalformedPort
 
+pathParser :: URIParser ByteString
+pathParser = pathParser' A.many'
+
+pathParser1 :: URIParser ByteString
+pathParser1 = pathParser' A.many1'
+
 -- | Parses the path section of a url. Note that while this can take
 -- percent-encoded characters, it does not itself decode them while parsing.
-pathParser :: URIParser ByteString
-pathParser = (mconcat <$> A.many' segmentParser) `orFailWith` MalformedPath
+pathParser' :: (Parser ByteString -> Parser [ByteString]) -> URIParser ByteString
+pathParser' repeatParser = (mconcat <$> repeatParser segmentParser) `orFailWith` MalformedPath
   where
     segmentParser = mconcat <$> sequence [string "/", A.takeWhile (inClass pchar)]
 
