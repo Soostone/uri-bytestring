@@ -15,12 +15,14 @@ import           Control.DeepSeq.Generics
 import           Control.Error
 import           Control.Monad
 import           GHC.Generics
+import           Data.List (delete)
 import           Data.Monoid
 import           Data.Attoparsec.ByteString
 import qualified Data.Attoparsec.ByteString as A
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import           Data.Word
+import           Network.HTTP.Types.URI (urlDecode)
 -------------------------------------------------------------------------------
 
 
@@ -30,7 +32,9 @@ import           Data.Word
 -- remainder of the URI's components
 newtype Scheme = Scheme ByteString deriving (Show, Eq, NFData)
 newtype Host = Host ByteString deriving (Show, Eq, NFData)
---TODO: probably a numeric type
+
+-- | While some libraries have chosen to limit this to a Word16, the
+-- spec seems to only specify that the string be comprised of digits.
 newtype Port = Port ByteString deriving (Show, Eq, NFData)
 
 data Authority = Authority
@@ -48,7 +52,8 @@ data UserInfo = UserInfo
 
 instance NFData UserInfo
 
-data Query = Query deriving (Show, Eq)
+newtype Query = Query [(ByteString, Maybe ByteString)]
+              deriving (Show, Eq, Monoid)
 
 data URI = URI
     { uriScheme    :: Scheme
@@ -117,13 +122,16 @@ heirPartParser = authWithPathParser
 mAuthorityParser :: URIParser (Maybe Authority)
 mAuthorityParser = mParse authorityParser
 
+-- | Parses the user info section of a URl (i.e. for HTTP Basic
+-- Authentication). Note that this will decode any percent-encoded
+-- data.
 userInfoParser :: URIParser UserInfo
 userInfoParser =  (uiTokenParser <* word8 atSym) `orFailWith` MalformedUserInfo
   where
     atSym = 64
     uiTokenParser = do
       ui <- A.takeWhile1 validForUserInfo
-      let (user, passWithColon) = BS.break (== colon) ui
+      let (user, passWithColon) = BS.break (== colon) $ urlDecode' ui
       let pass = BS.drop 1 passWithColon
       return $ UserInfo user pass
     validForUserInfo = inClass $ unreserved ++ pctEncoded ++ subDelims ++ ":"
@@ -163,7 +171,7 @@ ipV4Parser = mconcat <$> sequence [ decOctet
     dot = string "."
 
 regNameParser :: Parser ByteString
-regNameParser = A.takeWhile1 $ inClass validForRegName
+regNameParser = urlDecode' <$> (A.takeWhile1 $ inClass validForRegName)
   where
     validForRegName = unreserved ++ pctEncoded ++ subDelims
 
@@ -173,15 +181,35 @@ mPortParser = word8' colon `thenJust` portParser
 portParser :: URIParser Port
 portParser = (Port <$> A.takeWhile1 isDigit) `orFailWith` MalformedPort
 
---TODO: this needs work, need to basically take till the next token
+-- | Parses the path section of a url. Note that while this can take
+-- percent-encoded characters, it does not itself decode them while parsing.
 pathParser :: URIParser ByteString
-pathParser = (mconcat <$> A.many1' segmentParser) `orFailWith` MalformedPath
+pathParser = (mconcat <$> A.many' segmentParser) `orFailWith` MalformedPath
   where
     segmentParser = mconcat <$> sequence [string "/", A.takeWhile (inClass pchar)]
 
---TODO
+-- | This parser is being a bit pragmatic. The query section in the spec does not identify the key/value format used in URIs
 queryParser :: URIParser Query
-queryParser = pure Query
+queryParser = do
+  mc <- peekWord8 `orFailWith` OtherError "impossible peekWord8 error"
+  case mc of
+    Just c -> if c == question
+              then skip' 1 *> itemsParser
+              else fail' MalformedQuery
+    _      -> pure mempty
+  where
+    itemsParser = Query <$> A.sepBy' queryItemParser (word8' ampersand)
+
+queryItemParser :: URIParser (ByteString, Maybe ByteString)
+queryItemParser = do
+  s <- A.takeWhile1 validForQuery `orFailWith` MalformedQuery
+  let (k, vWithEquals) = BS.break (== equals) s
+  let v = case BS.drop 1 vWithEquals of
+             "" -> Nothing
+             v' -> Just v'
+  return (urlDecodeQuery k, urlDecodeQuery <$> v)
+  where
+    validForQuery = inClass ('?':'/':delete '&' pchar)
 
 mFragmentParser :: URIParser (Maybe ByteString)
 mFragmentParser = word8' hash `thenJust` fragmentParser
@@ -238,6 +266,16 @@ oBracket = 91
 
 cBracket :: Word8
 cBracket = 93
+
+equals :: Word8
+equals = 61
+
+question :: Word8
+question = 63
+
+ampersand :: Word8
+ampersand = 38
+
           ---------------------------
           -- ByteString Utilitiies --
           ---------------------------
@@ -249,6 +287,15 @@ bsToNum s = sum $ zipWith (*) (reverse ints) [10 ^ x | x <- [0..] :: [Int]]
     w2i w = fromIntegral $ w - 48
     ints  = map w2i . BS.unpack $ s
 
+urlDecodeQuery :: ByteString -> ByteString
+urlDecodeQuery = urlDecode plusToSpace
+  where
+    plusToSpace = True
+
+urlDecode' :: ByteString -> ByteString
+urlDecode' = urlDecode plusToSpace
+  where
+    plusToSpace = False
 
           ----------------------------------------
           -- Parsing with Strongly-Typed Errors --
@@ -269,6 +316,10 @@ thenJust p1 p2 = p1 *> (Just <$> p2) <|> pure Nothing
 
 word8' :: Word8 -> Parser' e Word8
 word8' = Parser' . word8
+
+skip' :: Int -> Parser' e ()
+skip' = Parser' . void . A.take
+
 
 string' :: ByteString -> Parser' e ByteString
 string' = Parser' . string
