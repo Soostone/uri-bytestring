@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable         #-}
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE NoMonomorphismRestriction  #-}
@@ -10,13 +11,15 @@ module URI.ByteString where
 
 -------------------------------------------------------------------------------
 import           Control.Applicative
+import           Control.DeepSeq.Generics
 import           Control.Error
 import           Control.Monad
+import           GHC.Generics
 import           Data.Monoid
 import           Data.Attoparsec.ByteString
-import qualified Data.Attoparsec.ByteString       as A
-import           Data.ByteString                  (ByteString)
-import qualified Data.ByteString                  as BS
+import qualified Data.Attoparsec.ByteString as A
+import           Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
 import           Data.Word
 -------------------------------------------------------------------------------
 
@@ -25,22 +28,25 @@ import           Data.Word
 
 -- | Required first component to referring to a specification for the
 -- remainder of the URI's components
-newtype Scheme = Scheme ByteString deriving (Show, Eq)
-newtype Host = Host ByteString deriving (Show, Eq)
+newtype Scheme = Scheme ByteString deriving (Show, Eq, NFData)
+newtype Host = Host ByteString deriving (Show, Eq, NFData)
 --TODO: probably a numeric type
-newtype Port = Port ByteString deriving (Show, Eq)
+newtype Port = Port ByteString deriving (Show, Eq, NFData)
 
 data Authority = Authority
    { userInfo :: Maybe UserInfo
    , host :: Host
    , port :: Maybe Port -- probably a numeric type
-   }  deriving (Show, Eq) --TODO
+   }  deriving (Show, Eq, Generic)
 
+instance NFData Authority
 
 data UserInfo = UserInfo
   { username :: ByteString
   , password :: ByteString
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Generic)
+
+instance NFData UserInfo
 
 data Query = Query deriving (Show, Eq)
 
@@ -50,7 +56,9 @@ data URI = URI
     , uriPath      :: ByteString
     , uriQuery     :: Query
     , uriFragment  :: Maybe ByteString
-    } deriving (Show, Eq)
+    } deriving (Show, Eq, Generic)
+
+instance NFData URI
 
                              --------------------
                              -- URI Parser --
@@ -60,7 +68,9 @@ data URI = URI
 --TODO:
 data SchemaError = NonAlphaLeading
                  | InvalidChars
-                 | MissingColon deriving (Show, Eq, Read)
+                 | MissingColon deriving (Show, Eq, Read, Generic)
+
+instance NFData SchemaError
 
 data URIParseError = MalformedSchema SchemaError
                    | MalformedUserInfo
@@ -70,7 +80,10 @@ data URIParseError = MalformedSchema SchemaError
                    | MalformedPort
                    | MalformedPath
                    | IncompleteInput
-                   | OtherError String deriving (Show, Eq, Read) --TODO; othererror fallback
+                   | OtherError String deriving (Show, Eq, Read, Generic)
+--TODO; custom w/ othererror fallback
+
+instance NFData URIParseError
 
 parseUri :: ByteString -> Either URIParseError URI
 parseUri = parseOnly' uriParser
