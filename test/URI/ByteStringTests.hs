@@ -42,15 +42,20 @@ parseUriTests = testGroup "parseUri" [
           ""
           (Query [("foo", Just "bar"), ("foo", Just "baz quux")])
           (Just "frag")
+  , testParseFailure "$$$$://www.example.org/" (MalformedScheme NonAlphaLeading)
                                    ]
 
 uriParseErrorInstancesTests :: TestTree
 uriParseErrorInstancesTests = testGroup "URIParseError instances" [
     testProperty "roundtrips between Show and Read" $ \(e :: URIParseError) ->
       read (show e) == e
-  , testCase "reads escaped strings into OtherError" $
-      read "\"this is why fail is terrible\"" @?= OtherError "this is why fail is terrible"
                                                                   ]
 
 testParses :: ByteString -> URI -> TestTree
-testParses s u = testCase (unpack s) $ parseUri s @?= Right u
+testParses s = parseTest s . Right
+
+testParseFailure :: ByteString -> URIParseError -> TestTree
+testParseFailure s = parseTest s . Left
+
+parseTest :: ByteString -> Either URIParseError URI -> TestTree
+parseTest s r = testCase (unpack s) $ parseUri s @?= r

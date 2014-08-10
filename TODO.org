@@ -9,3 +9,12 @@
   CLOSED: [2014-08-09 Sat 16:08]
 * DONE quickcheck URIParseError read/show cycle
   CLOSED: [2014-08-09 Sat 16:10]
+* DONE limit exports
+  CLOSED: [2014-08-09 Sat 16:22]
+* DONE examples
+  CLOSED: [2014-08-09 Sat 21:31]
+* DONE doctest examples
+  CLOSED: [2014-08-09 Sat 21:31]
+* DONE check haddocks
+  CLOSED: [2014-08-09 Sat 21:32]
+* TODO travis

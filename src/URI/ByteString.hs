@@ -3,17 +3,31 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE NoMonomorphismRestriction  #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 
-module URI.ByteString where
+module URI.ByteString (
+                      -- URI-related types
+                        Scheme(..)
+                      , Host(..)
+                      , Port(..)
+                      , Authority(..)
+                      , UserInfo(..)
+                      , Query(..)
+                      , URI(..)
+                      , SchemaError(..)
+                      , URIParseError(..)
+
+                      -- Parsing
+                      , parseUri
+                      ) where
 
 -------------------------------------------------------------------------------
 import           Control.Applicative
 import           Control.DeepSeq.Generics
 import           Control.Error
 import           Control.Monad
-import           GHC.Generics
-import           GHC.Read
-import           Data.List (delete)
+import           GHC.Generics (Generic)
+import           Data.List (delete, stripPrefix)
 import           Data.Monoid
 import           Data.Attoparsec.ByteString
 import qualified Data.Attoparsec.ByteString as A
@@ -21,7 +35,7 @@ import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import           Data.Word
 import           Network.HTTP.Types.URI (urlDecode)
-import           Text.Read.Lex
+import           Text.Read (readMaybe)
 -------------------------------------------------------------------------------
 
 
@@ -68,54 +82,44 @@ instance NFData URI
                              -- URI Parser --
                              --------------------
 
---TODO: quickcheck Show, Read
---TODO:
-data SchemaError = NonAlphaLeading
-                 | InvalidChars
-                 | MissingColon deriving (Show, Eq, Read, Generic)
+data SchemaError = NonAlphaLeading -- ^ Scheme must start with an alphabet character
+                 | InvalidChars    -- ^ Subsequent characters in the schema were invalid
+                 | MissingColon    -- ^ Schemas must be followed by a colon
+                 deriving (Show, Eq, Read, Generic)
 
 instance NFData SchemaError
 
-data URIParseError = MalformedSchema SchemaError
+data URIParseError = MalformedScheme SchemaError
                    | MalformedUserInfo
                    | MalformedQuery
                    | MalformedFragment
                    | MalformedHost
                    | MalformedPort
                    | MalformedPath
-                   | IncompleteInput
-                   | OtherError String deriving (Show, Eq, Generic)
-
-instance Read URIParseError where
-  readPrec = parens $ do
-    tok <- lexP
-    case tok of
-      String s -> return $ OtherError s
-      Ident s  -> parseFallback s
-      _        -> fail "no parse"
-    where
-      parseFallback "MalformedSchema"   = MalformedSchema <$> readPrec
-      parseFallback "MalformedUserInfo" = return MalformedUserInfo
-      parseFallback "MalformedQuery"    = return MalformedQuery
-      parseFallback "MalformedFragment" = return MalformedFragment
-      parseFallback "MalformedHost"     = return MalformedHost
-      parseFallback "MalformedPort"     = return MalformedPort
-      parseFallback "MalformedPath"     = return MalformedPath
-      parseFallback "IncompleteInput"   = return IncompleteInput
-      parseFallback "OtherError"        = OtherError <$> readPrec
-      parseFallback _                   = fail "no parse"
+                   | OtherError String -- ^ Catchall for unpredictable errors
+                   deriving (Show, Eq, Generic, Read)
 
 instance NFData URIParseError
 
+-- | Parse a strict ByteString into a URI or an error.
+--
+-- Example:
+--
+-- >>> parseUri "http://www.example.org/foo?bar=baz#quux"
+-- Right (URI {uriScheme = Scheme "http", uriAuthority = Just (Authority {userInfo = Nothing, host = Host "www.example.org", port = Nothing}), uriPath = "/foo", uriQuery = Query [("bar",Just "baz")], uriFragment = Just "quux"})
+--
+-- >>> parseUri "$$$$://badurl.example.org"
+-- Left (MalformedScheme NonAlphaLeading)
+
 parseUri :: ByteString -> Either URIParseError URI
-parseUri = parseOnly' uriParser
+parseUri = parseOnly' OtherError uriParser
 
 type URIParser = Parser' URIParseError
 
 uriParser :: URIParser URI
 uriParser = do
   scheme <- schemeParser
-  void $ word8 colon `orFailWith` MalformedSchema MissingColon
+  void $ word8 colon `orFailWith` MalformedScheme MissingColon
 
   (authority, path) <- heirPartParser
   query <- queryParser
@@ -124,8 +128,8 @@ uriParser = do
 
 schemeParser :: URIParser Scheme
 schemeParser = do
-  c    <- satisfy isAlpha           `orFailWith` MalformedSchema NonAlphaLeading
-  rest <- A.takeWhile isSchemeValid `orFailWith` MalformedSchema InvalidChars
+  c    <- satisfy isAlpha           `orFailWith` MalformedScheme NonAlphaLeading
+  rest <- A.takeWhile isSchemeValid `orFailWith` MalformedScheme InvalidChars
   return $ Scheme $ c `BS.cons` rest
   where
     isSchemeValid = inClass $ "-+." ++ alphaNum
@@ -262,7 +266,6 @@ fragmentParser = A.takeWhile validFragmentWord `orFailWith` MalformedFragment
                              -- Grammar Components --
                              ------------------------
 
---TODO: use characters rather than inClass for performance
 isAlpha :: Word8 -> Bool
 isAlpha = inClass alpha
 
@@ -366,24 +369,17 @@ orFailWith p e = Parser' p <|> fail' e
 fail' :: (Show e, Read e) => e -> Parser' e a
 fail' = fail . show
 
-type Result' e = IResult' e ByteString
+parseOnly' :: (Read e, Show e) => (String -> e) -> Parser' e a -> ByteString -> Either e a
+parseOnly' noParse (Parser' p) = fmapL readWithFallback . parseOnly p
+  where
+    readWithFallback s = fromMaybe (noParse s) (readMaybe . stripAttoparsecGarbage $ s)
 
-data IResult' e i r = Fail' i [String] e
-                    | Partial' (i -> IResult' e i r)
-                    | Done' i r
+-- | Our pal Control.Monad.fail is how attoparsec propagates
+-- errors. If you throw an error string with fail (your only choice),
+-- it will *always* prepend it with "Failed reading: ". At least in
+-- this version. That may change to something else and break this workaround.
+stripAttoparsecGarbage :: String -> String
+stripAttoparsecGarbage = stripPrefix' "Failed reading: "
 
-parse' :: (Read e, Show e) => Parser' e a -> ByteString -> Result' e a
-parse' (Parser' p) = convertIResult . parse p
-
-parseOnly' :: (Read e, Show e) => Parser' e a -> ByteString -> Either e a
-parseOnly' (Parser' p) = fmapL read . parseOnly p
-
-eitherResult' :: e -> IResult' e i r -> Either e r
-eitherResult' _ (Done' _ r)   = Right r
-eitherResult' _ (Fail' _ _ e) = Left e
-eitherResult' incomplete _    = Left incomplete
-
-convertIResult :: (Read  e, Show e) => IResult i r -> IResult' e i r
-convertIResult (Fail leftover ctx e) = Fail' leftover ctx $ read e
-convertIResult (Partial f)           = Partial' (convertIResult . f)
-convertIResult (Done leftover r)     = Done' leftover r
+stripPrefix' :: Eq a => [a] -> [a] -> [a]
+stripPrefix' pfx s = fromMaybe s $ stripPrefix pfx s
