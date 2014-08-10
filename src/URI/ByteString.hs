@@ -30,7 +30,7 @@ module URI.ByteString (
                       , URIParseError(..)
 
                       -- Parsing
-                      , parseUri
+                      , parseURI
                       ) where
 
 -------------------------------------------------------------------------------
@@ -55,29 +55,32 @@ import           Text.Read (readMaybe)
 
 -- | Required first component to referring to a specification for the
 -- remainder of the URI's components
-newtype Scheme = Scheme ByteString deriving (Show, Eq, NFData)
-newtype Host = Host ByteString deriving (Show, Eq, NFData)
+newtype Scheme = Scheme { getScheme :: ByteString }
+  deriving (Show, Eq, NFData)
+newtype Host = Host { getHost :: ByteString }
+  deriving (Show, Eq, NFData)
 
 -- | While some libraries have chosen to limit this to a Word16, the
 -- spec seems to only specify that the string be comprised of digits.
-newtype Port = Port ByteString deriving (Show, Eq, NFData)
+newtype Port = Port { getPort :: ByteString }
+  deriving (Show, Eq, NFData)
 
 data Authority = Authority
-   { userInfo :: Maybe UserInfo
-   , host :: Host
-   , port :: Maybe Port -- probably a numeric type
-   }  deriving (Show, Eq, Generic)
+   { authorityUserInfo :: Maybe UserInfo
+   , authorityHost :: Host
+   , authorityPort :: Maybe Port -- probably a numeric type
+   } deriving (Show, Eq, Generic)
 
 instance NFData Authority
 
 data UserInfo = UserInfo
-  { username :: ByteString
-  , password :: ByteString
+  { uiUsername :: ByteString
+  , uiPassword :: ByteString
   } deriving (Show, Eq, Generic)
 
 instance NFData UserInfo
 
-newtype Query = Query [(ByteString, Maybe ByteString)]
+newtype Query = Query { getQuery :: [(ByteString, Maybe ByteString)] }
               deriving (Show, Eq, Monoid)
 
 data URI = URI
@@ -117,14 +120,14 @@ instance NFData URIParseError
 --
 -- Example:
 --
--- >>> parseUri "http://www.example.org/foo?bar=baz#quux"
+-- >>> parseURI "http://www.example.org/foo?bar=baz#quux"
 -- Right (URI {uriScheme = Scheme "http", uriAuthority = Just (Authority {userInfo = Nothing, host = Host "www.example.org", port = Nothing}), uriPath = "/foo", uriQuery = Query [("bar",Just "baz")], uriFragment = Just "quux"})
 --
--- >>> parseUri "$$$$://badurl.example.org"
+-- >>> parseURI "$$$$://badurl.example.org"
 -- Left (MalformedScheme NonAlphaLeading)
 
-parseUri :: ByteString -> Either URIParseError URI
-parseUri = parseOnly' OtherError uriParser
+parseURI :: ByteString -> Either URIParseError URI
+parseURI = parseOnly' OtherError uriParser
 
 -- | Convenience alias for a parser that can return URIParseError
 type URIParser = Parser' URIParseError

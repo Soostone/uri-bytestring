@@ -58,4 +58,4 @@ testParseFailure :: ByteString -> URIParseError -> TestTree
 testParseFailure s = parseTest s . Left
 
 parseTest :: ByteString -> Either URIParseError URI -> TestTree
-parseTest s r = testCase (unpack s) $ parseUri s @?= r
+parseTest s r = testCase (unpack s) $ parseURI s @?= r
