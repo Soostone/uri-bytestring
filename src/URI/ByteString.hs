@@ -38,16 +38,16 @@ import           Control.Applicative
 import           Control.DeepSeq.Generics
 import           Control.Error
 import           Control.Monad
-import           GHC.Generics (Generic)
-import           Data.List (delete, stripPrefix)
-import           Data.Monoid
 import           Data.Attoparsec.ByteString
 import qualified Data.Attoparsec.ByteString as A
-import           Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
+import           Data.ByteString            (ByteString)
+import qualified Data.ByteString            as BS
+import           Data.List                  (delete, stripPrefix)
+import           Data.Monoid
 import           Data.Word
-import           Network.HTTP.Types.URI (urlDecode)
-import           Text.Read (readMaybe)
+import           GHC.Generics               (Generic)
+import           Network.HTTP.Types.URI     (urlDecode)
+import           Text.Read                  (readMaybe)
 -------------------------------------------------------------------------------
 
 
@@ -67,8 +67,8 @@ newtype Port = Port { getPort :: ByteString }
 
 data Authority = Authority
    { authorityUserInfo :: Maybe UserInfo
-   , authorityHost :: Host
-   , authorityPort :: Maybe Port -- probably a numeric type
+   , authorityHost     :: Host
+   , authorityPort     :: Maybe Port -- probably a numeric type
    } deriving (Show, Eq, Generic)
 
 instance NFData Authority
@@ -121,7 +121,7 @@ instance NFData URIParseError
 -- Example:
 --
 -- >>> parseURI "http://www.example.org/foo?bar=baz#quux"
--- Right (URI {uriScheme = Scheme "http", uriAuthority = Just (Authority {userInfo = Nothing, host = Host "www.example.org", port = Nothing}), uriPath = "/foo", uriQuery = Query [("bar",Just "baz")], uriFragment = Just "quux"})
+-- Right (URI {uriScheme = Scheme {getScheme = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {getHost = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {getQuery = [("bar",Just "baz")]}, uriFragment = Just "quux"})
 --
 -- >>> parseURI "$$$$://badurl.example.org"
 -- Left (MalformedScheme NonAlphaLeading)
@@ -202,7 +202,7 @@ userInfoParser =  (uiTokenParser <* word8 atSym) `orFailWith` MalformedUserInfo
       let (user, passWithColon) = BS.break (== colon) $ urlDecode' ui
       let pass = BS.drop 1 passWithColon
       return $ UserInfo user pass
-    validForUserInfo = inClass $ unreserved ++ pctEncoded ++ subDelims ++ ":"
+    validForUserInfo = inClass $ pctEncoded ++ subDelims ++ (':' : unreserved)
 
 -- | Authority consists of host and port
 authorityParser :: URIParser Authority
@@ -246,7 +246,7 @@ ipV4Parser = mconcat <$> sequence [ decOctet
 regNameParser :: Parser ByteString
 regNameParser = urlDecode' <$> A.takeWhile1 (inClass validForRegName)
   where
-    validForRegName = unreserved ++ pctEncoded ++ subDelims
+    validForRegName = pctEncoded ++ subDelims ++ unreserved
 
 -- | Only parse a port if the colon signifier is there.
 mPortParser :: URIParser (Maybe Port)
@@ -327,10 +327,14 @@ isDigit :: Word8 -> Bool
 isDigit = inClass digit
 
 pchar :: String
-pchar = unreserved ++ pctEncoded ++ subDelims ++ ":@"
+pchar = pctEncoded ++ subDelims ++ ":@" ++ unreserved
 
+
+-- Very important!  When concatenating this to other strings to make larger
+-- character classes, you must put this at the end because the '-' character
+-- is treated as a range unless it's at the beginning or end.
 unreserved :: String
-unreserved = "-._~" ++ alphaNum
+unreserved = alphaNum ++ "~._-"
 
 
 -- | pc-encoded technically is % HEXDIG HEXDIG but that's handled by
