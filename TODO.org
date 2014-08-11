@@ -19,3 +19,6 @@
   CLOSED: [2014-08-09 Sat 21:32]
 * TODO travis
 * TODO URNs?
+* TODO drop http-types dependency
+* TODO add bytestring serialization for URI
+* TODO quickcheck suite for testing parse . serialize == id
