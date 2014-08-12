@@ -40,20 +40,20 @@ parseUriTests = testGroup "parseUri" [
       URI (Scheme "https")
           (Just (Authority (Just (UserInfo "user" "pass:wo rd")) (Host "www.example.org") Nothing))
           ""
-          (Query [("foo", Just "bar"), ("foo", Just "baz quux")])
+          (Query [("foo", "bar"), ("foo", "baz quux")])
           (Just "frag")
   , testParses "http://www.google.com/aclk?sa=l&ai=CChPOVvnoU8fMDI_QsQeE4oGwDf664-EF7sq01HqV1MMFCAAQAigDUO3VhpcDYMnGqYvApNgPoAGq3vbiA8gBAaoEKE_QQwekDUoMeW9IQghV4HRuzL_l-7vVjlML559kix6XOcC1c4Tb9xeAB76hiR2QBwGoB6a-Gw&sig=AOD64_3Ulyu0DcDsc1AamOIxq63RF9u4zQ&rct=j&q=&ved=0CCUQ0Qw&adurl=http://www.aruba.com/where-to-stay/hotels-and-resorts%3Ftid%3D122" $
       URI { uriScheme = Scheme {getScheme = "http"}
           , uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {getHost = "www.google.com"}, authorityPort = Nothing})
           , uriPath = "/aclk"
           , uriQuery = Query {getQuery =
-              [("sa",Just "l")
-              ,("ai",Just "CChPOVvnoU8fMDI_QsQeE4oGwDf664-EF7sq01HqV1MMFCAAQAigDUO3VhpcDYMnGqYvApNgPoAGq3vbiA8gBAaoEKE_QQwekDUoMeW9IQghV4HRuzL_l-7vVjlML559kix6XOcC1c4Tb9xeAB76hiR2QBwGoB6a-Gw")
-              ,("sig",Just "AOD64_3Ulyu0DcDsc1AamOIxq63RF9u4zQ")
-              ,("rct",Just "j")
-              ,("q",Nothing)
-              ,("ved",Just "0CCUQ0Qw")
-              ,("adurl",Just "http://www.aruba.com/where-to-stay/hotels-and-resorts?tid=122")
+              [("sa", "l")
+              ,("ai", "CChPOVvnoU8fMDI_QsQeE4oGwDf664-EF7sq01HqV1MMFCAAQAigDUO3VhpcDYMnGqYvApNgPoAGq3vbiA8gBAaoEKE_QQwekDUoMeW9IQghV4HRuzL_l-7vVjlML559kix6XOcC1c4Tb9xeAB76hiR2QBwGoB6a-Gw")
+              ,("sig", "AOD64_3Ulyu0DcDsc1AamOIxq63RF9u4zQ")
+              ,("rct", "j")
+              ,("q", "")
+              ,("ved", "0CCUQ0Qw")
+              ,("adurl", "http://www.aruba.com/where-to-stay/hotels-and-resorts?tid=122")
               ]}
           , uriFragment = Nothing
           }

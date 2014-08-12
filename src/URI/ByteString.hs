@@ -80,7 +80,7 @@ data UserInfo = UserInfo
 
 instance NFData UserInfo
 
-newtype Query = Query { getQuery :: [(ByteString, Maybe ByteString)] }
+newtype Query = Query { getQuery :: [(ByteString, ByteString)] }
               deriving (Show, Eq, Monoid)
 
 data URI = URI
@@ -121,7 +121,7 @@ instance NFData URIParseError
 -- Example:
 --
 -- >>> parseURI "http://www.example.org/foo?bar=baz#quux"
--- Right (URI {uriScheme = Scheme {getScheme = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {getHost = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {getQuery = [("bar",Just "baz")]}, uriFragment = Just "quux"})
+-- Right (URI {uriScheme = Scheme {getScheme = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {getHost = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {getQuery = [("bar","baz")]}, uriFragment = Just "quux"})
 --
 -- >>> parseURI "$$$$://badurl.example.org"
 -- Left (MalformedScheme NonAlphaLeading)
@@ -291,14 +291,12 @@ queryParser = do
 -- | When parsing a single query item string like "foo=bar", turns it
 -- into a key/value pair as per convention, with the value being
 -- optional. & separators need to be handled further up.
-queryItemParser :: URIParser (ByteString, Maybe ByteString)
+queryItemParser :: URIParser (ByteString, ByteString)
 queryItemParser = do
   s <- A.takeWhile1 validForQuery `orFailWith` MalformedQuery
   let (k, vWithEquals) = BS.break (== equals) s
-  let v = case BS.drop 1 vWithEquals of
-             "" -> Nothing
-             v' -> Just v'
-  return (urlDecodeQuery k, urlDecodeQuery <$> v)
+  let v = BS.drop 1 vWithEquals
+  return (urlDecodeQuery k, urlDecodeQuery v)
   where
     validForQuery = inClass ('?':'/':delete '&' pchar)
 
