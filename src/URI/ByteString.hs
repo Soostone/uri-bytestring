@@ -138,7 +138,7 @@ uriParser = do
   scheme <- schemeParser
   void $ word8 colon `orFailWith` MalformedScheme MissingColon
 
-  (authority, path) <- heirPartParser
+  (authority, path) <- hierPartParser
   query <- queryParser
   frag  <- mFragmentParser
   return $ URI scheme authority path query frag
@@ -154,10 +154,10 @@ schemeParser = do
 
 --TODO: handle absolute, noscheme, empty
 
--- | Heir part immediately follows the schema and encompasses the
+-- | Hier part immediately follows the schema and encompasses the
 -- authority and path sections.
-heirPartParser :: URIParser (Maybe Authority, ByteString)
-heirPartParser = authWithPathParser <|>
+hierPartParser :: URIParser (Maybe Authority, ByteString)
+hierPartParser = authWithPathParser <|>
                  pathAbsoluteParser <|>
                  pathRootlessParser <|>
                  pathEmptyParser
