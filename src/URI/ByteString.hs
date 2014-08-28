@@ -4,6 +4,9 @@
 {-# LANGUAGE NoMonomorphismRestriction  #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+
+{-# LANGUAGE DeriveFunctor        #-}
+
 {-|
 Module      : URI.ByteString
 Description : ByteString URI Parser
@@ -28,9 +31,11 @@ module URI.ByteString (
                       , URI(..)
                       , SchemaError(..)
                       , URIParseError(..)
+                      , QueryParseError(..)
 
                       -- Parsing
                       , parseURI
+                      , parseQuery
                       ) where
 
 -------------------------------------------------------------------------------
@@ -106,15 +111,19 @@ instance NFData SchemaError
 
 data URIParseError = MalformedScheme SchemaError
                    | MalformedUserInfo
-                   | MalformedQuery
+                   | MalformedQuery QueryParseError
                    | MalformedFragment
                    | MalformedHost
                    | MalformedPort
                    | MalformedPath
-                   | OtherError String -- ^ Catchall for unpredictable errors
+                   | OtherURIError String -- ^ Catchall for unpredictable errors
                    deriving (Show, Eq, Generic, Read)
 
 instance NFData URIParseError
+
+data QueryParseError = OtherQueryError String
+                     | NoQuestionMark
+                     | InvalidQueryChars deriving (Show, Eq, Read)
 
 -- | Parse a strict ByteString into a URI or an error.
 --
@@ -127,10 +136,15 @@ instance NFData URIParseError
 -- Left (MalformedScheme NonAlphaLeading)
 
 parseURI :: ByteString -> Either URIParseError URI
-parseURI = parseOnly' OtherError uriParser
+parseURI = parseOnly' OtherURIError uriParser
+
+--TODO: more specific error type
+parseQuery :: ByteString -> Either QueryParseError Query
+parseQuery = parseOnly' OtherQueryError queryParser
 
 -- | Convenience alias for a parser that can return URIParseError
 type URIParser = Parser' URIParseError
+type QueryParser = Parser' QueryParseError
 
 -- | Toplevel parser for URIs
 uriParser :: URIParser URI
@@ -139,7 +153,7 @@ uriParser = do
   void $ word8 colon `orFailWith` MalformedScheme MissingColon
 
   (authority, path) <- heirPartParser
-  query <- queryParser
+  query <- queryParser' True MalformedQuery
   frag  <- mFragmentParser
   return $ URI scheme authority path query frag
 
@@ -179,7 +193,7 @@ pathRootlessParser = (,) <$> pure Nothing <*> pathParser1
 -- with a path-valid char.
 pathEmptyParser :: URIParser (Maybe Authority, ByteString)
 pathEmptyParser = do
-  nextChar <- peekWord8 `orFailWith` OtherError "impossible peekWord8 error"
+  nextChar <- peekWord8 `orFailWith` OtherURIError "impossible peekWord8 error"
   case nextChar of
     Just c -> guard (notInClass pchar c) >> return emptyCase
     _      -> return emptyCase
@@ -272,28 +286,36 @@ pathParser' repeatParser = (mconcat <$> repeatParser segmentParser) `orFailWith`
   where
     segmentParser = mconcat <$> sequence [string "/", A.takeWhile (inClass pchar)]
 
+-- todo: lop off the post question mark parser to another internal parser
+
 -- | This parser is being a bit pragmatic. The query section in the
 -- spec does not identify the key/value format used in URIs, but that
 -- is what most users are expecting to see. One alternative could be
 -- to just expose the query string as a string and offer functions on
 -- URI to parse a query string to a Query.
-queryParser :: URIParser Query
-queryParser = do
-  mc <- peekWord8 `orFailWith` OtherError "impossible peekWord8 error"
+queryParser :: QueryParser Query
+queryParser = queryParser' False id
+
+queryParser' :: (Show e, Read e) => Bool -> (QueryParseError -> e) -> Parser' e Query
+queryParser' requiresQ conv = do
+  mc <- peekWord8 `orFailWith'` OtherQueryError "impossible peekWord8 error"
   case mc of
-    Just c -> if c == question
-              then skip' 1 *> itemsParser
-              else fail' MalformedQuery
-    _      -> pure mempty
+    Just c | c == question -> skip' 1 *> itemsParser
+           | requiresQ     -> fail' $ conv NoQuestionMark
+           | otherwise     -> itemsParser
+
+    _      | requiresQ -> pure mempty
+           | otherwise -> itemsParser
   where
-    itemsParser = Query <$> A.sepBy' queryItemParser (word8' ampersand)
+    itemsParser = Query <$> A.sepBy' (queryItemParser conv) (word8' ampersand)
+    orFailWith' x = orFailWith x . conv
 
 -- | When parsing a single query item string like "foo=bar", turns it
 -- into a key/value pair as per convention, with the value being
 -- optional. & separators need to be handled further up.
-queryItemParser :: URIParser (ByteString, Maybe ByteString)
-queryItemParser = do
-  s <- A.takeWhile1 validForQuery `orFailWith` MalformedQuery
+queryItemParser :: (Show e, Read e) => (QueryParseError -> e) -> Parser' e (ByteString, Maybe ByteString)
+queryItemParser conv = do
+  s <- A.takeWhile1 validForQuery `orFailWith'` InvalidQueryChars
   let (k, vWithEquals) = BS.break (== equals) s
   let v = case BS.drop 1 vWithEquals of
              "" -> Nothing
@@ -301,6 +323,7 @@ queryItemParser = do
   return (urlDecodeQuery k, urlDecodeQuery <$> v)
   where
     validForQuery = inClass ('?':'/':delete '&' pchar)
+    orFailWith' x = orFailWith x . conv
 
 -- | Only parses a fragment if the # signifiier is there
 mFragmentParser :: URIParser (Maybe ByteString)
