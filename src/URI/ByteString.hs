@@ -36,13 +36,13 @@ module URI.ByteString (
 -------------------------------------------------------------------------------
 import           Control.Applicative
 import           Control.DeepSeq.Generics
-import           Control.Error
 import           Control.Monad
 import           Data.Attoparsec.ByteString
 import qualified Data.Attoparsec.ByteString as A
 import           Data.ByteString            (ByteString)
 import qualified Data.ByteString            as BS
 import           Data.List                  (delete, stripPrefix)
+import           Data.Maybe
 import           Data.Monoid
 import           Data.Word
 import           GHC.Generics               (Generic)
@@ -471,3 +471,6 @@ stripAttoparsecGarbage = stripPrefix' "Failed reading: "
 -- | stripPrefix where it is a noop if the prefix doesn't exist.
 stripPrefix' :: Eq a => [a] -> [a] -> [a]
 stripPrefix' pfx s = fromMaybe s $ stripPrefix pfx s
+
+fmapL :: (a -> b) -> Either a r -> Either b r
+fmapL f = either (Left . f) Right
