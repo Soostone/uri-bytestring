@@ -9,7 +9,7 @@ Module      : URI.ByteString
 Description : ByteString URI Parser
 Copyright   : (c) Soostone Inc., 2014
                   Michael Xavier, 2014
-License     : GPL-3
+License     : BSD3
 Maintainer  : michael@michaelxavier.net
 Stability   : experimental
 Portability : POSIX
