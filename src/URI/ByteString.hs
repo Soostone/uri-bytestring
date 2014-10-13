@@ -35,7 +35,6 @@ module URI.ByteString (
 
 -------------------------------------------------------------------------------
 import           Control.Applicative
-import           Control.DeepSeq.Generics
 import           Control.Monad
 import           Data.Attoparsec.ByteString
 import qualified Data.Attoparsec.ByteString as A
@@ -56,14 +55,14 @@ import           Text.Read                  (readMaybe)
 -- | Required first component to referring to a specification for the
 -- remainder of the URI's components
 newtype Scheme = Scheme { getScheme :: ByteString }
-  deriving (Show, Eq, NFData)
+  deriving (Show, Eq)
 newtype Host = Host { getHost :: ByteString }
-  deriving (Show, Eq, NFData)
+  deriving (Show, Eq)
 
 -- | While some libraries have chosen to limit this to a Word16, the
 -- spec seems to only specify that the string be comprised of digits.
 newtype Port = Port { getPort :: ByteString }
-  deriving (Show, Eq, NFData)
+  deriving (Show, Eq)
 
 data Authority = Authority
    { authorityUserInfo :: Maybe UserInfo
@@ -71,14 +70,10 @@ data Authority = Authority
    , authorityPort     :: Maybe Port -- probably a numeric type
    } deriving (Show, Eq, Generic)
 
-instance NFData Authority
-
 data UserInfo = UserInfo
   { uiUsername :: ByteString
   , uiPassword :: ByteString
   } deriving (Show, Eq, Generic)
-
-instance NFData UserInfo
 
 newtype Query = Query { getQuery :: [(ByteString, ByteString)] }
               deriving (Show, Eq, Monoid)
@@ -91,7 +86,6 @@ data URI = URI
     , uriFragment  :: Maybe ByteString
     } deriving (Show, Eq, Generic)
 
-instance NFData URI
 
                              --------------------
                              -- URI Parser --
@@ -102,7 +96,6 @@ data SchemaError = NonAlphaLeading -- ^ Scheme must start with an alphabet chara
                  | MissingColon    -- ^ Schemas must be followed by a colon
                  deriving (Show, Eq, Read, Generic)
 
-instance NFData SchemaError
 
 data URIParseError = MalformedScheme SchemaError
                    | MalformedUserInfo
@@ -114,7 +107,6 @@ data URIParseError = MalformedScheme SchemaError
                    | OtherError String -- ^ Catchall for unpredictable errors
                    deriving (Show, Eq, Generic, Read)
 
-instance NFData URIParseError
 
 -- | Parse a strict ByteString into a URI or an error.
 --
