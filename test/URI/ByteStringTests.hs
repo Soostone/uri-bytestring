@@ -59,6 +59,12 @@ parseUriTests = testGroup "parseUri" [
           }
 
   , testParseFailure "$$$$://www.example.org/" (MalformedScheme NonAlphaLeading)
+  , testParses "https://www.example.org?listParam[]=foo,bar" $
+      URI (Scheme "https")
+          (Just (Authority Nothing (Host "www.example.org") Nothing))
+          ""
+          (Query [("listParam[]", "foo,bar")])
+          Nothing
                                    ]
 
 uriParseErrorInstancesTests :: TestTree

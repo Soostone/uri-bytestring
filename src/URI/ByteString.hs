@@ -290,7 +290,7 @@ queryItemParser = do
   let v = BS.drop 1 vWithEquals
   return (urlDecodeQuery k, urlDecodeQuery v)
   where
-    validForQuery = inClass ('?':'/':delete '&' pchar)
+    validForQuery = inClass ('?':'/':'[':']':delete '&' pchar)
 
 -- | Only parses a fragment if the # signifiier is there
 mFragmentParser :: URIParser (Maybe ByteString)
