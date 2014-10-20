@@ -19,5 +19,5 @@ instance NFData URIParseError
 -------------------------------------------------------------------------------
 main :: IO ()
 main = defaultMain [
-  bench "parse" $ nf parseURI "http://google.com/example?params=youbetcha"
+  bench "parse" $ nf (parseURI strictURIParserOptions) "http://google.com/example?params=youbetcha"
                    ]

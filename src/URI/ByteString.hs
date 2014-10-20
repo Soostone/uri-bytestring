@@ -28,7 +28,9 @@ module URI.ByteString (
                       , URI(..)
                       , SchemaError(..)
                       , URIParseError(..)
-
+                      , URIParserOptions(..)
+                      , strictURIParserOptions
+                      , laxURIParserOptions
                       -- Parsing
                       , parseURI
                       ) where
@@ -87,6 +89,33 @@ data URI = URI
     } deriving (Show, Eq, Generic)
 
 
+-- | Options for the parser. You will probably want to use either
+-- "strictURIParserOptions" or "laxURIParserOptions"
+data URIParserOptions = URIParserOptions
+    { upoValidQueryChar :: Word8 -> Bool
+    }
+
+-- | Strict URI Parser config. Follows RFC3986 as-specified. Use this
+-- if you can be certain that your URIs are properly encoded or if you
+-- want parsing to fail if they deviate from the spec at all.
+strictURIParserOptions :: URIParserOptions
+strictURIParserOptions =  URIParserOptions
+    { upoValidQueryChar = validForQuery
+    }
+
+
+-- | Lax URI Parser config. Use this if you you want to handle common
+-- deviations from the spec gracefully.
+--
+-- * Allows non-encoded [ and ] in query string
+laxURIParserOptions :: URIParserOptions
+laxURIParserOptions = URIParserOptions
+    { upoValidQueryChar = validForQueryLax
+    }
+
+
+
+
                              --------------------
                              -- URI Parser --
                              --------------------
@@ -112,27 +141,44 @@ data URIParseError = MalformedScheme SchemaError
 --
 -- Example:
 --
--- >>> parseURI "http://www.example.org/foo?bar=baz#quux"
+-- >>> parseURI strictURIParserOptions "http://www.example.org/foo?bar=baz#quux"
 -- Right (URI {uriScheme = Scheme {getScheme = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {getHost = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {getQuery = [("bar","baz")]}, uriFragment = Just "quux"})
 --
--- >>> parseURI "$$$$://badurl.example.org"
+-- >>> parseURI strictURIParserOptions "$$$$://badurl.example.org"
 -- Left (MalformedScheme NonAlphaLeading)
+--
+-- There are some urls that you'll encounter which defy the spec, such
+-- as those with square brackets in the query string. If you must be
+-- able to parse those, you can use "laxURIParserOptions" or specify your own
+--
+-- >>> parseURI strictURIParserOptions "http://www.example.org/foo?bar[]=baz"
+-- Left MalformedQuery
+--
+-- >>> parseURI laxURIParserOptions "http://www.example.org/foo?bar[]=baz"
+-- Right (URI {uriScheme = Scheme {getScheme = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {getHost = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {getQuery = [("bar[]","baz")]}, uriFragment = Nothing})
+--
+-- >>> let myLaxOptions = URIParserOptions { upoValidQueryChar = liftA2 (||) (upoValidQueryChar strictURIParserOptions) (inClass "[]")}
+-- >>> parseURI myLaxOptions "http://www.example.org/foo?bar[]=baz"
+-- Right (URI {uriScheme = Scheme {getScheme = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {getHost = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {getQuery = [("bar[]","baz")]}, uriFragment = Nothing})
 
-parseURI :: ByteString -> Either URIParseError URI
-parseURI = parseOnly' OtherError uriParser
+parseURI :: URIParserOptions -> ByteString -> Either URIParseError URI
+parseURI opts = parseOnly' OtherError (uriParser opts)
 
 -- | Convenience alias for a parser that can return URIParseError
 type URIParser = Parser' URIParseError
 
 -- | Toplevel parser for URIs
-uriParser :: URIParser URI
-uriParser = do
+uriParser :: URIParserOptions -> URIParser URI
+uriParser opts = do
   scheme <- schemeParser
   void $ word8 colon `orFailWith` MalformedScheme MissingColon
 
   (authority, path) <- hierPartParser
-  query <- queryParser
+  query <- queryParser opts
   frag  <- mFragmentParser
+  case frag of
+    Just _ -> endOfInput `orFailWith` MalformedFragment
+    Nothing -> endOfInput `orFailWith` MalformedQuery
   return $ URI scheme authority path query frag
 
 -- | Parser for scheme, e.g. "http", "https", etc.
@@ -269,34 +315,38 @@ pathParser' repeatParser = (mconcat <$> repeatParser segmentParser) `orFailWith`
 -- is what most users are expecting to see. One alternative could be
 -- to just expose the query string as a string and offer functions on
 -- URI to parse a query string to a Query.
-queryParser :: URIParser Query
-queryParser = do
+queryParser :: URIParserOptions -> URIParser Query
+queryParser opts = do
   mc <- peekWord8 `orFailWith` OtherError "impossible peekWord8 error"
   case mc of
-    Just c -> if c == question
-              then skip' 1 *> itemsParser
-              else fail' MalformedQuery
+    Just c
+      | c == question -> skip' 1 *> itemsParser
+      | c == hash     -> pure mempty
+      | otherwise     -> fail' MalformedPath
     _      -> pure mempty
   where
-    itemsParser = Query <$> A.sepBy' queryItemParser (word8' ampersand)
+    itemsParser = Query <$> A.sepBy' (queryItemParser opts) (word8' ampersand)
 
 -- | When parsing a single query item string like "foo=bar", turns it
 -- into a key/value pair as per convention, with the value being
 -- optional. & separators need to be handled further up.
-queryItemParser :: URIParser (ByteString, ByteString)
-queryItemParser = do
-  s <- A.takeWhile1 validForQuery `orFailWith` MalformedQuery
+queryItemParser :: URIParserOptions -> URIParser (ByteString, ByteString)
+queryItemParser opts = do
+  s <- A.takeWhile1 (upoValidQueryChar opts) `orFailWith` MalformedQuery
   let (k, vWithEquals) = BS.break (== equals) s
   let v = BS.drop 1 vWithEquals
   return (urlDecodeQuery k, urlDecodeQuery v)
-  where
-    validForQuery = inClass ('?':'/':'[':']':delete '&' pchar)
+
+--TODO: type
+validForQuery :: Word8 -> Bool
+validForQuery = inClass ('?':'/':delete '&' pchar)
+
+validForQueryLax :: Word8 -> Bool
+validForQueryLax = notInClass "&#"
 
 -- | Only parses a fragment if the # signifiier is there
 mFragmentParser :: URIParser (Maybe ByteString)
 mFragmentParser = word8' hash `thenJust` fragmentParser
-  where
-    hash = 35
 
 -- TODO: may want to just take till EOS and then check and see if its valid
 
@@ -362,6 +412,10 @@ question = 63
 
 ampersand :: Word8
 ampersand = 38
+
+hash :: Word8
+hash = 35
+
 
           ---------------------------
           -- ByteString Utilitiies --

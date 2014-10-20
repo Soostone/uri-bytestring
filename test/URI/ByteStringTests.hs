@@ -42,9 +42,9 @@ parseUriTests = testGroup "parseUri" [
           ""
           (Query [("foo", "bar"), ("foo", "baz quux")])
           (Just "frag")
-  , testParses "http://www.google.com/aclk?sa=l&ai=CChPOVvnoU8fMDI_QsQeE4oGwDf664-EF7sq01HqV1MMFCAAQAigDUO3VhpcDYMnGqYvApNgPoAGq3vbiA8gBAaoEKE_QQwekDUoMeW9IQghV4HRuzL_l-7vVjlML559kix6XOcC1c4Tb9xeAB76hiR2QBwGoB6a-Gw&sig=AOD64_3Ulyu0DcDsc1AamOIxq63RF9u4zQ&rct=j&q=&ved=0CCUQ0Qw&adurl=http://www.aruba.com/where-to-stay/hotels-and-resorts%3Ftid%3D122" $
+  , testParses "http://www.google.com/aclk?sa=l&ai=CChPOVvnoU8fMDI_QsQeE4oGwDf664-EF7sq01HqV1MMFCAAQAigDUO3VhpcDYMnGqYvApNgPoAGq3vbiA8gBAaoEKE_QQwekDUoMeW9IQghV4HRuzL_l-7vVjlML559kix6XOcC1c4Tb9xeAB76hiR2QBwGoB6a-Gw&sig=AOD64_3Ulyu0DcDsc1AamOIxq63RF9u4zQ&rct=j&q=&ved=0CCUQ0Qw&adurl=http://www.aruba.com/where-to-stay/hotels-and-resorts%3Ftid%3D122"
       URI { uriScheme = Scheme {getScheme = "http"}
-          , uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {getHost = "www.google.com"}, authorityPort = Nothing})
+          , uriAuthority = Just Authority {authorityUserInfo = Nothing, authorityHost = Host {getHost = "www.google.com"}, authorityPort = Nothing}
           , uriPath = "/aclk"
           , uriQuery = Query {getQuery =
               [("sa", "l")
@@ -59,7 +59,22 @@ parseUriTests = testGroup "parseUri" [
           }
 
   , testParseFailure "$$$$://www.example.org/" (MalformedScheme NonAlphaLeading)
-  , testParses "https://www.example.org?listParam[]=foo,bar" $
+  , testParses "http://www.example.org/foo#bar" $
+      URI (Scheme "http")
+          (Just (Authority Nothing (Host "www.example.org") Nothing))
+          "/foo"
+          mempty
+          (Just "bar")
+  , testParseFailure "http://www.example.org/foo#bar#baz" MalformedFragment
+  , testParseFailure "https://www.example.org?listParam[]=foo,bar" MalformedQuery
+  , testParsesLax "https://www.example.org?listParam[]=foo,bar" $
+          URI (Scheme "https")
+          (Just (Authority Nothing (Host "www.example.org") Nothing))
+          ""
+          (Query [("listParam[]", "foo,bar")])
+          Nothing
+
+  , testParses "https://www.example.org?listParam%5B%5D=foo,bar" $
       URI (Scheme "https")
           (Just (Authority Nothing (Host "www.example.org") Nothing))
           ""
@@ -74,10 +89,16 @@ uriParseErrorInstancesTests = testGroup "URIParseError instances" [
                                                                   ]
 
 testParses :: ByteString -> URI -> TestTree
-testParses s = parseTest s . Right
+testParses = testParses' strictURIParserOptions
+
+testParsesLax :: ByteString -> URI -> TestTree
+testParsesLax = testParses' laxURIParserOptions
+
+testParses' :: URIParserOptions -> ByteString -> URI -> TestTree
+testParses' opts s = parseTest opts s . Right
 
 testParseFailure :: ByteString -> URIParseError -> TestTree
-testParseFailure s = parseTest s . Left
+testParseFailure s = parseTest strictURIParserOptions s . Left
 
-parseTest :: ByteString -> Either URIParseError URI -> TestTree
-parseTest s r = testCase (unpack s) $ parseURI s @?= r
+parseTest :: URIParserOptions -> ByteString -> Either URIParseError URI -> TestTree
+parseTest opts s r = testCase (unpack s) $ parseURI opts s @?= r
