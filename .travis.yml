@@ -1,0 +1,8 @@
+language: haskell
+ghc:
+  - 7.8
+  - 7.6
+script:
+  - cabal configure --enable-tests --enable-benchmarks && cabal build && cabal test && cabal bench
+install:
+  - cabal install --only-dependencies --enable-tests --enable-benchmarks
