@@ -4,6 +4,7 @@
 {-# LANGUAGE NoMonomorphismRestriction  #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TemplateHaskell            #-}
 {-|
 Module      : URI.ByteString
 Description : ByteString URI Parser
@@ -17,23 +18,23 @@ Portability : POSIX
 URI.ByteString aims to be an RFC3986 compliant URI parser that uses
 efficient ByteStrings for parsing and representing the data.
 |-}
-module URI.ByteString (
-                      -- URI-related types
-                        Scheme(..)
-                      , Host(..)
-                      , Port(..)
-                      , Authority(..)
-                      , UserInfo(..)
-                      , Query(..)
-                      , URI(..)
-                      , SchemaError(..)
-                      , URIParseError(..)
-                      , URIParserOptions(..)
-                      , strictURIParserOptions
-                      , laxURIParserOptions
-                      -- Parsing
-                      , parseURI
-                      ) where
+module URI.ByteString
+    (-- URI-related types
+     Scheme(..)
+    , Host(..)
+    , Port(..)
+    , Authority(..)
+    , UserInfo(..)
+    , Query(..)
+    , URI(..)
+    , SchemaError(..)
+    , URIParseError(..)
+    , URIParserOptions(..)
+    , strictURIParserOptions
+    , laxURIParserOptions
+    -- Parsing
+    , parseURI
+    ) where
 
 -------------------------------------------------------------------------------
 import           Control.Applicative
@@ -45,6 +46,7 @@ import qualified Data.ByteString            as BS
 import           Data.List                  (delete, stripPrefix)
 import           Data.Maybe
 import           Data.Monoid
+import           Data.SafeCopy
 import           Data.Word
 import           GHC.Generics               (Generic)
 import           Network.HTTP.Types.URI     (urlDecode)
@@ -57,14 +59,16 @@ import           Text.Read                  (readMaybe)
 -- | Required first component to referring to a specification for the
 -- remainder of the URI's components
 newtype Scheme = Scheme { getScheme :: ByteString }
-  deriving (Show, Eq)
+  deriving (Show, Eq, SafeCopy)
+
 newtype Host = Host { getHost :: ByteString }
-  deriving (Show, Eq)
+  deriving (Show, Eq, SafeCopy)
 
 -- | While some libraries have chosen to limit this to a Word16, the
 -- spec seems to only specify that the string be comprised of digits.
 newtype Port = Port { getPort :: ByteString }
-  deriving (Show, Eq)
+  deriving (Show, Eq, SafeCopy)
+
 
 data Authority = Authority
    { authorityUserInfo :: Maybe UserInfo
@@ -77,8 +81,9 @@ data UserInfo = UserInfo
   , uiPassword :: ByteString
   } deriving (Show, Eq, Generic)
 
+
 newtype Query = Query { getQuery :: [(ByteString, ByteString)] }
-              deriving (Show, Eq, Monoid)
+              deriving (Show, Eq, Monoid, SafeCopy)
 
 data URI = URI
     { uriScheme    :: Scheme
@@ -520,3 +525,11 @@ stripPrefix' pfx s = fromMaybe s $ stripPrefix pfx s
 
 fmapL :: (a -> b) -> Either a r -> Either b r
 fmapL f = either (Left . f) Right
+
+
+
+-------------------------------------------------------------------------------
+deriveSafeCopy 1 'base ''URI
+deriveSafeCopy 1 'base ''Authority
+deriveSafeCopy 1 'base ''UserInfo
+-------------------------------------------------------------------------------

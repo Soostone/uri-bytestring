@@ -16,10 +16,12 @@ library
     URI.ByteString
 
   build-depends:
+
       attoparsec       >= 0.10    && < 0.13
     , base             >= 4.6     && < 4.8
     , bytestring       >= 0.9     && < 0.11
     , http-types       >= 0.8.5   && < 0.9
+    , safecopy         >= 0.7     && < 0.9
 
   hs-source-dirs:      src
   default-language:    Haskell2010
