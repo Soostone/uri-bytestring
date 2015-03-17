@@ -19,6 +19,9 @@
   CLOSED: [2014-08-09 Sat 21:32]
 * TODO travis
 * TODO URNs?
-* TODO drop http-types dependency
+* DONE drop http-types dependency
+  CLOSED: [2015-03-17 Tue 14:08]
 * TODO add bytestring serialization for URI
 * TODO quickcheck suite for testing parse . serialize == id
+* TODO source code cleanup
+  want to use Soostone's coding standards

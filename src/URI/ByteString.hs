@@ -20,7 +20,7 @@ efficient ByteStrings for parsing and representing the data.
 |-}
 module URI.ByteString
     (-- URI-related types
-     Scheme(..)
+      Scheme(..)
     , Host(..)
     , Port(..)
     , Authority(..)
@@ -41,6 +41,7 @@ import           Control.Applicative
 import           Control.Monad
 import           Data.Attoparsec.ByteString
 import qualified Data.Attoparsec.ByteString as A
+import           Data.Bits
 import           Data.ByteString            (ByteString)
 import qualified Data.ByteString            as BS
 import           Data.List                  (delete, stripPrefix)
@@ -49,7 +50,6 @@ import           Data.Monoid
 import           Data.SafeCopy
 import           Data.Word
 import           GHC.Generics               (Generic)
-import           Network.HTTP.Types.URI     (urlDecode)
 import           Text.Read                  (readMaybe)
 -------------------------------------------------------------------------------
 
@@ -527,9 +527,36 @@ fmapL :: (a -> b) -> Either a r -> Either b r
 fmapL f = either (Left . f) Right
 
 
+-- | This function was extracte from the @http-types@ package. The
+-- license can be found in licenses/http-types/LICENSE
+urlDecode
+    :: Bool -- ^ Whether to decode '+' to ' '
+    -> BS.ByteString
+    -> BS.ByteString
+urlDecode replacePlus z = fst $ BS.unfoldrN (BS.length z) go z
+  where
+    go bs =
+        case BS.uncons bs of
+            Nothing -> Nothing
+            Just (43, ws) | replacePlus -> Just (32, ws) -- plus to space
+            Just (37, ws) -> Just $ fromMaybe (37, ws) $ do -- percent
+                (x, xs) <- BS.uncons ws
+                x' <- hexVal x
+                (y, ys) <- BS.uncons xs
+                y' <- hexVal y
+                Just $ (combine x' y', ys)
+            Just (w, ws) -> Just (w, ws)
+    hexVal w
+        | 48 <= w && w <= 57  = Just $ w - 48 -- 0 - 9
+        | 65 <= w && w <= 70  = Just $ w - 55 -- A - F
+        | 97 <= w && w <= 102 = Just $ w - 87 -- a - f
+        | otherwise = Nothing
+    combine :: Word8 -> Word8 -> Word8
+    combine a b = shiftL a 4 .|. b
 
 -------------------------------------------------------------------------------
 deriveSafeCopy 1 'base ''URI
 deriveSafeCopy 1 'base ''Authority
 deriveSafeCopy 1 'base ''UserInfo
 -------------------------------------------------------------------------------
+
