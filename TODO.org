@@ -1,6 +1,8 @@
 * heirpart enhancements
-** TODO IPV6 Parsing
-** TODO IPVFuture Parsing
+** DONE IPV6 Parsing
+   CLOSED: [2015-03-18 Wed 16:03]
+** DONE IPVFuture Parsing
+   CLOSED: [2015-03-18 Wed 16:03]
 ** TODO distinguish malformed ip addresses from domains
 * TODO more complete test suite
 ** TODO failure cases

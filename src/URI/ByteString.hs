@@ -5,6 +5,7 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TupleSections              #-}
 {-|
 Module      : URI.ByteString
 Description : ByteString URI Parser
@@ -44,6 +45,7 @@ import qualified Data.Attoparsec.ByteString as A
 import           Data.Bits
 import           Data.ByteString            (ByteString)
 import qualified Data.ByteString            as BS
+import           Data.Ix
 import           Data.List                  (delete, stripPrefix)
 import           Data.Maybe
 import           Data.Monoid
@@ -195,8 +197,6 @@ schemeParser = do
   where
     isSchemeValid = inClass $ "-+." ++ alphaNum
 
---TODO: handle absolute, noscheme, empty
-
 -- | Hier part immediately follows the schema and encompasses the
 -- authority and path sections.
 hierPartParser :: URIParser (Maybe Authority, ByteString)
@@ -256,15 +256,38 @@ hostParser :: URIParser Host
 hostParser = (Host <$> parsers) `orFailWith` MalformedHost
   where
     parsers = ipLiteralParser <|> ipV4Parser <|> regNameParser
-    ipLiteralParser = word8 oBracket *> (ipV6Parser <|> ipVFutureParser) <* word8 cBracket
+    ipLiteralParser = word8 oBracket *> (ipVFutureParser <|> ipV6Parser) <* word8 cBracket
 
 -- | Parses IPV6 addresses. See relevant section in RFC.
 ipV6Parser :: Parser ByteString
-ipV6Parser = fail "FIXME"
+ipV6Parser = do
+    leading <- h16s
+    elided <- maybe [] (const [""]) <$> optional (string "::")
+    trailing <- many $ (A.takeWhile (/= colon) <* word8 colon)
+    (finalChunkLen, final) <- finalChunk
+    let len = length (leading ++ trailing) + finalChunkLen
+    when (len > 8) $ fail "Too many digits in IPv6 address"
+    return $ rejoin $ [rejoin leading] ++ elided ++ trailing ++ maybeToList final
+  where
+    finalChunk = fromMaybe (0, Nothing) <$> optional (finalIpV4 <|> finalH16)
+    finalH16 = (1, ) . Just <$> h16
+    finalIpV4 = (2, ) . Just <$> ipV4Parser
+    rejoin = BS.intercalate ":"
+    h16s :: Parser [ByteString]
+    h16s = h16 `sepBy` (word8 colon)
+    h16 = mconcat <$> parseBetween 1 4 (A.takeWhile1 hexDigit)
+
 
 -- | Parses IPVFuture addresses. See relevant section in RFC.
 ipVFutureParser :: Parser ByteString
-ipVFutureParser = fail "FIXME"
+ipVFutureParser = do
+    _    <- word8 lowercaseV
+    ds   <- A.takeWhile1 hexDigit
+    _    <- word8 period
+    rest <- A.takeWhile1 $ inClass $ subDelims ++ ":" ++ unreserved
+    return $ "v" <> ds <> "." <> rest
+  where
+    lowercaseV = 118
 
 -- | Parses a valid IPV4 address
 ipV4Parser :: Parser ByteString
@@ -342,7 +365,6 @@ queryItemParser opts = do
   let v = BS.drop 1 vWithEquals
   return (urlDecodeQuery k, urlDecodeQuery v)
 
---TODO: type
 validForQuery :: Word8 -> Bool
 validForQuery = inClass ('?':'/':delete '&' pchar)
 
@@ -364,6 +386,10 @@ fragmentParser = A.takeWhile1 validFragmentWord `orFailWith` MalformedFragment
                              ------------------------
                              -- Grammar Components --
                              ------------------------
+
+hexDigit :: Word8 -> Bool
+hexDigit = inClass "0-9a-fA-F"
+
 
 isAlpha :: Word8 -> Bool
 isAlpha = inClass alpha
@@ -420,6 +446,9 @@ ampersand = 38
 
 hash :: Word8
 hash = 35
+
+period :: Word8
+period = 46
 
 
           ---------------------------
@@ -502,6 +531,11 @@ orFailWith p e = Parser' p <|> fail' e
 fail' :: (Show e, Read e) => e -> Parser' e a
 fail' = fail . show
 
+parseBetween :: (Alternative m, Monad m) => Int -> Int -> m a -> m [a]
+parseBetween a b f = choice parsers
+  where
+    parsers = map (flip count f) $ reverse $ range (a, b)
+
 -- | Stronger-typed variation of parseOnly'. Consumes all input.
 parseOnly' :: (Read e, Show e)
               => (String -> e) -- ^ Fallback if we can't parse a failure message for the sake of totality.
@@ -553,6 +587,7 @@ urlDecode replacePlus z = fst $ BS.unfoldrN (BS.length z) go z
         | otherwise = Nothing
     combine :: Word8 -> Word8 -> Word8
     combine a b = shiftL a 4 .|. b
+
 
 -------------------------------------------------------------------------------
 deriveSafeCopy 1 'base ''URI

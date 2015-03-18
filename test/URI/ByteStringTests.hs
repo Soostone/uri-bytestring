@@ -21,6 +21,13 @@ tests = testGroup "URI.Bytestring" [
     parseUriTests
   , uriParseErrorInstancesTests
                                    ]
+      -- http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:80/index.html
+      -- http://[1080:0:0:0:8:800:200C:417A]/index.html
+      -- http://[3ffe:2a00:100:7031::1]
+      -- http://[1080::8:800:200C:417A]/foo
+      -- http://[::192.9.5.5]/ipng
+      -- http://[::FFFF:129.144.52.38]:80/index.html
+      -- http://[2010:836B:4179::836B:4179]
 
 parseUriTests :: TestTree
 parseUriTests = testGroup "parseUri" [
@@ -30,12 +37,19 @@ parseUriTests = testGroup "parseUri" [
           "/"
           mempty
           Nothing
-  , testParses "http://www.example.org" $
-      URI (Scheme "http")
-          (Just (Authority Nothing (Host "www.example.org") Nothing))
-          ""
-          mempty
-          Nothing
+  , testParseHost "http://www.example.org" "www.example.org"
+  -- IPV4
+  , testParseHost "http://192.168.1.1" "192.168.1.1"
+  -- IPV6
+  , testParseHost "http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]" "FEDC:BA98:7654:3210:FEDC:BA98:7654:3210"
+  , testParseHost "http://[1080:0:0:0:8:800:200C:417A]" "1080:0:0:0:8:800:200C:417A"
+  , testParseHost "http://[3ffe:2a00:100:7031::1]" "3ffe:2a00:100:7031::1"
+  , testParseHost "http://[::192.9.5.5]" "::192.9.5.5"
+  , testParseHost "http://[::FFFF:129.144.52.38]" "::FFFF:129.144.52.38"
+  , testParseHost "http://[2010:836B:4179::836B:4179]" "2010:836B:4179::836B:4179"
+  , testParseHost "http://[2010:836B:4179::836B:4179]" "2010:836B:4179::836B:4179"
+  -- IPVFuture
+  , testParseHost "http://[v1.fe80::a+en1]" "v1.fe80::a+en1"
   , testParses "https://user:pass:wo%20rd@www.example.org?foo=bar&foo=baz+quux#frag" $
       URI (Scheme "https")
           (Just (Authority (Just (UserInfo "user" "pass:wo rd")) (Host "www.example.org") Nothing))
@@ -90,6 +104,18 @@ uriParseErrorInstancesTests = testGroup "URIParseError instances" [
 
 testParses :: ByteString -> URI -> TestTree
 testParses = testParses' strictURIParserOptions
+
+
+testParseHost :: ByteString -> ByteString -> TestTree
+testParseHost uri expectedHost =
+  testParses uri $
+    URI (Scheme "http")
+        (Just (Authority Nothing (Host expectedHost) Nothing))
+        mempty
+        mempty
+        Nothing
+
+
 
 testParsesLax :: ByteString -> URI -> TestTree
 testParsesLax = testParses' laxURIParserOptions
