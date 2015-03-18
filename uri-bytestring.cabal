@@ -12,20 +12,36 @@ category:            Web
 build-type:          Simple
 cabal-version:       >=1.16
 
+flag lib-Werror
+  description: Treat warnings as errors when building.
+  manual: True
+  default: False
+
 library
   exposed-modules:
     URI.ByteString
-
+    URI.Parser
+  other-modules:
+    URI.Common
+    URI.Types
   build-depends:
+      parsers          >= 0.12    && < 0.13
+    , either
+    , mtl
 
-      attoparsec       >= 0.10    && < 0.13
+      --TODO: drop
+    , attoparsec
+
     , base             >= 4.6     && < 4.8
     , bytestring       >= 0.9     && < 0.11
     , safecopy         >= 0.7     && < 0.9
 
   hs-source-dirs:      src
   default-language:    Haskell2010
-  ghc-options: -O2 -Wall -Werror
+  if flag(lib-Werror)
+    ghc-options: -Wall -Werror
+
+  ghc-options: -O2
 
 test-suite test
   type: exitcode-stdio-1.0
@@ -67,6 +83,8 @@ benchmark bench
     , statistics < 0.11
     , deepseq >= 1.3 && < 1.4
     , deepseq-generics >= 0.1 && < 0.2
+    , network-uri >= 2.6.0.1 && < 2.7
+    , attoparsec
 
 source-repository head
   type:     git

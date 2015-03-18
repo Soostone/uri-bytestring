@@ -25,3 +25,4 @@
 * TODO quickcheck suite for testing parse . serialize == id
 * TODO source code cleanup
   want to use Soostone's coding standards
+* TODO bench against network-uri

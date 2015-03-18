@@ -19,7 +19,7 @@ URI.ByteString aims to be an RFC3986 compliant URI parser that uses
 efficient ByteStrings for parsing and representing the data.
 |-}
 module URI.ByteString
-    (-- URI-related types
+    (-- * URI-related types
       Scheme(..)
     , Host(..)
     , Port(..)
@@ -52,94 +52,9 @@ import           Data.Word
 import           GHC.Generics               (Generic)
 import           Text.Read                  (readMaybe)
 -------------------------------------------------------------------------------
-
-
-------------------------------------------------------------------------------
-
--- | Required first component to referring to a specification for the
--- remainder of the URI's components
-newtype Scheme = Scheme { getScheme :: ByteString }
-  deriving (Show, Eq, SafeCopy)
-
-newtype Host = Host { getHost :: ByteString }
-  deriving (Show, Eq, SafeCopy)
-
--- | While some libraries have chosen to limit this to a Word16, the
--- spec seems to only specify that the string be comprised of digits.
-newtype Port = Port { getPort :: ByteString }
-  deriving (Show, Eq, SafeCopy)
-
-
-data Authority = Authority
-   { authorityUserInfo :: Maybe UserInfo
-   , authorityHost     :: Host
-   , authorityPort     :: Maybe Port -- probably a numeric type
-   } deriving (Show, Eq, Generic)
-
-data UserInfo = UserInfo
-  { uiUsername :: ByteString
-  , uiPassword :: ByteString
-  } deriving (Show, Eq, Generic)
-
-
-newtype Query = Query { getQuery :: [(ByteString, ByteString)] }
-              deriving (Show, Eq, Monoid, SafeCopy)
-
-data URI = URI
-    { uriScheme    :: Scheme
-    , uriAuthority :: Maybe Authority
-    , uriPath      :: ByteString
-    , uriQuery     :: Query
-    , uriFragment  :: Maybe ByteString
-    } deriving (Show, Eq, Generic)
-
-
--- | Options for the parser. You will probably want to use either
--- "strictURIParserOptions" or "laxURIParserOptions"
-data URIParserOptions = URIParserOptions
-    { upoValidQueryChar :: Word8 -> Bool
-    }
-
--- | Strict URI Parser config. Follows RFC3986 as-specified. Use this
--- if you can be certain that your URIs are properly encoded or if you
--- want parsing to fail if they deviate from the spec at all.
-strictURIParserOptions :: URIParserOptions
-strictURIParserOptions =  URIParserOptions
-    { upoValidQueryChar = validForQuery
-    }
-
-
--- | Lax URI Parser config. Use this if you you want to handle common
--- deviations from the spec gracefully.
---
--- * Allows non-encoded [ and ] in query string
-laxURIParserOptions :: URIParserOptions
-laxURIParserOptions = URIParserOptions
-    { upoValidQueryChar = validForQueryLax
-    }
-
-
-
-
-                             --------------------
-                             -- URI Parser --
-                             --------------------
-
-data SchemaError = NonAlphaLeading -- ^ Scheme must start with an alphabet character
-                 | InvalidChars    -- ^ Subsequent characters in the schema were invalid
-                 | MissingColon    -- ^ Schemas must be followed by a colon
-                 deriving (Show, Eq, Read, Generic)
-
-
-data URIParseError = MalformedScheme SchemaError
-                   | MalformedUserInfo
-                   | MalformedQuery
-                   | MalformedFragment
-                   | MalformedHost
-                   | MalformedPort
-                   | MalformedPath
-                   | OtherError String -- ^ Catchall for unpredictable errors
-                   deriving (Show, Eq, Generic, Read)
+import           URI.Common
+import           URI.Types
+-------------------------------------------------------------------------------
 
 
 -- | Parse a strict ByteString into a URI or an error.
@@ -343,11 +258,6 @@ queryItemParser opts = do
   return (urlDecodeQuery k, urlDecodeQuery v)
 
 --TODO: type
-validForQuery :: Word8 -> Bool
-validForQuery = inClass ('?':'/':delete '&' pchar)
-
-validForQueryLax :: Word8 -> Bool
-validForQueryLax = notInClass "&#"
 
 -- | Only parses a fragment if the # signifiier is there
 mFragmentParser :: URIParser (Maybe ByteString)
@@ -422,34 +332,6 @@ hash :: Word8
 hash = 35
 
 
-          ---------------------------
-          -- ByteString Utilitiies --
-          ---------------------------
-
--- FIXME: theres probably a much better way to do this
-
--- | Convert a bytestring into an int representation. Assumes the
--- entire string is comprised of 0-9 digits.
-bsToNum :: ByteString -> Int
-bsToNum s = sum $ zipWith (*) (reverse ints) [10 ^ x | x <- [0..] :: [Int]]
-  where
-    w2i w = fromIntegral $ w - 48
-    ints  = map w2i . BS.unpack $ s
-
--- | Decoding specifically for the query string, which decodes + as
--- space.
-urlDecodeQuery :: ByteString -> ByteString
-urlDecodeQuery = urlDecode plusToSpace
-  where
-    plusToSpace = True
-
--- | Decode any part of the URL besides the query, which decodes + as
--- space.
-urlDecode' :: ByteString -> ByteString
-urlDecode' = urlDecode plusToSpace
-  where
-    plusToSpace = False
-
           ----------------------------------------
           -- Parsing with Strongly-Typed Errors --
           ----------------------------------------
@@ -470,12 +352,6 @@ newtype Parser' e a = Parser' (Parser a)
 mParse :: Parser' e a -> Parser' e (Maybe a)
 mParse p = option Nothing (Just <$> p)
 
--- | If the first parser succeeds, discard the result and use the
--- second parser (which may fail). If the first parser fails, return
--- Nothing. This is used to check a benign precondition that indicates
--- the presence of a parsible token, i.e. ? preceeding a query.
-thenJust :: Parser' e a -> Parser' e b -> Parser' e (Maybe b)
-thenJust p1 p2 = p1 *> (Just <$> p2) <|> pure Nothing
 
 -- | Lift a word8 Parser into a strongly error typed parser. This will
 -- generate a "stringy" error message if it fails, so you should
@@ -527,32 +403,38 @@ fmapL :: (a -> b) -> Either a r -> Either b r
 fmapL f = either (Left . f) Right
 
 
--- | This function was extracte from the @http-types@ package. The
--- license can be found in licenses/http-types/LICENSE
-urlDecode
-    :: Bool -- ^ Whether to decode '+' to ' '
-    -> BS.ByteString
-    -> BS.ByteString
-urlDecode replacePlus z = fst $ BS.unfoldrN (BS.length z) go z
-  where
-    go bs =
-        case BS.uncons bs of
-            Nothing -> Nothing
-            Just (43, ws) | replacePlus -> Just (32, ws) -- plus to space
-            Just (37, ws) -> Just $ fromMaybe (37, ws) $ do -- percent
-                (x, xs) <- BS.uncons ws
-                x' <- hexVal x
-                (y, ys) <- BS.uncons xs
-                y' <- hexVal y
-                Just $ (combine x' y', ys)
-            Just (w, ws) -> Just (w, ws)
-    hexVal w
-        | 48 <= w && w <= 57  = Just $ w - 48 -- 0 - 9
-        | 65 <= w && w <= 70  = Just $ w - 55 -- A - F
-        | 97 <= w && w <= 102 = Just $ w - 87 -- a - f
-        | otherwise = Nothing
-    combine :: Word8 -> Word8 -> Word8
-    combine a b = shiftL a 4 .|. b
+
+
+-------------------------------------------------------------------------------
+-- | Strict URI Parser config. Follows RFC3986 as-specified. Use this
+-- if you can be certain that your URIs are properly encoded or if you
+-- want parsing to fail if they deviate from the spec at all.
+strictURIParserOptions :: URIParserOptions
+strictURIParserOptions =  URIParserOptions
+    { upoValidQueryChar = validForQuery
+    }
+
+
+-------------------------------------------------------------------------------
+-- | Lax URI Parser config. Use this if you you want to handle common
+-- deviations from the spec gracefully.
+--
+-- * Allows non-encoded [ and ] in query string
+laxURIParserOptions :: URIParserOptions
+laxURIParserOptions = URIParserOptions
+    { upoValidQueryChar = validForQueryLax
+    }
+
+
+-------------------------------------------------------------------------------
+validForQuery :: Word8 -> Bool
+validForQuery = inClass ('?':'/':delete '&' pchar)
+
+
+-------------------------------------------------------------------------------
+validForQueryLax :: Word8 -> Bool
+validForQueryLax = notInClass "&#"
+
 
 -------------------------------------------------------------------------------
 deriveSafeCopy 1 'base ''URI
