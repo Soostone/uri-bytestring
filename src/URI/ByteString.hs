@@ -49,7 +49,6 @@ import           Data.Ix
 import           Data.List                  (delete, stripPrefix)
 import           Data.Maybe
 import           Data.Monoid
-import           Data.SafeCopy
 import           Data.Word
 import           GHC.Generics               (Generic)
 import           Text.Read                  (readMaybe)
@@ -61,15 +60,15 @@ import           Text.Read                  (readMaybe)
 -- | Required first component to referring to a specification for the
 -- remainder of the URI's components
 newtype Scheme = Scheme { getScheme :: ByteString }
-  deriving (Show, Eq, SafeCopy)
+  deriving (Show, Eq)
 
 newtype Host = Host { getHost :: ByteString }
-  deriving (Show, Eq, SafeCopy)
+  deriving (Show, Eq)
 
 -- | While some libraries have chosen to limit this to a Word16, the
 -- spec seems to only specify that the string be comprised of digits.
 newtype Port = Port { getPort :: ByteString }
-  deriving (Show, Eq, SafeCopy)
+  deriving (Show, Eq)
 
 
 data Authority = Authority
@@ -85,7 +84,7 @@ data UserInfo = UserInfo
 
 
 newtype Query = Query { getQuery :: [(ByteString, ByteString)] }
-              deriving (Show, Eq, Monoid, SafeCopy)
+              deriving (Show, Eq, Monoid)
 
 data URI = URI
     { uriScheme    :: Scheme
@@ -585,11 +584,3 @@ urlDecode replacePlus z = fst $ BS.unfoldrN (BS.length z) go z
         | otherwise = Nothing
     combine :: Word8 -> Word8 -> Word8
     combine a b = shiftL a 4 .|. b
-
-
--------------------------------------------------------------------------------
-deriveSafeCopy 1 'base ''URI
-deriveSafeCopy 1 'base ''Authority
-deriveSafeCopy 1 'base ''UserInfo
--------------------------------------------------------------------------------
-
