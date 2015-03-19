@@ -3,7 +3,8 @@ ghc:
   - 7.8
   - 7.6
 install:
-  - cabal install --only-dependencies --enable-tests --enable-benchmarks
+  - cabal install happy alex
   - cabal install doctest
+  - cabal install --only-dependencies --enable-tests --enable-benchmarks
 script:
   - cabal configure --enable-tests --enable-benchmarks && cabal build && cabal test && doctest -isrc -XOverloadedStrings src/URI/ByteString.hs && cabal bench
