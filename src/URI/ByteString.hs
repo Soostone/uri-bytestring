@@ -375,8 +375,6 @@ validForQueryLax = notInClass "&#"
 mFragmentParser :: URIParser (Maybe ByteString)
 mFragmentParser = word8' hash `thenJust` fragmentParser
 
--- TODO: may want to just take till EOS and then check and see if its valid
-
 -- | The final piece of a uri, e.g. #fragment, minus the #.
 fragmentParser :: URIParser ByteString
 fragmentParser = A.takeWhile1 validFragmentWord `orFailWith` MalformedFragment
