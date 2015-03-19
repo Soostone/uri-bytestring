@@ -1,7 +1,7 @@
 name:                uri-bytestring
 version:             0.0
 synopsis:            Haskell URI parsing as ByteStrings
--- description:
+description: uri-bytestring aims to be an RFC3986 compliant URI parser that uses efficient ByteStrings for parsing and representing the URI data.
 license:             BSD3
 license-files:       LICENSE
                    , licenses/http-types/LICENSE

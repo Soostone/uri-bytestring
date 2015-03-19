@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TupleSections              #-}
 {-|
+
 Module      : URI.ByteString
 Description : ByteString URI Parser
 Copyright   : (c) Soostone Inc., 2014
@@ -15,7 +16,8 @@ Portability : POSIX
 
 URI.ByteString aims to be an RFC3986 compliant URI parser that uses
 efficient ByteStrings for parsing and representing the data.
-|-}
+
+-}
 module URI.ByteString
     (-- URI-related types
       Scheme(..)
