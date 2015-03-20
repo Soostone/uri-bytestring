@@ -7,4 +7,4 @@ install:
   - cabal install doctest
   - cabal install --only-dependencies --enable-tests --enable-benchmarks
 script:
-  - cabal configure --enable-tests --enable-benchmarks && cabal build && cabal test && make doctest && cabal bench
+  - cabal configure --enable-tests --enable-benchmarks -flib-Werror && cabal build && cabal test && make doctest && cabal bench
