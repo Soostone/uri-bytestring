@@ -7,16 +7,21 @@
 {-|
 
 Module      : URI.ByteString
-Description : ByteString URI Parser
+Description : ByteString URI Parser and Serializer
 Copyright   : (c) Soostone Inc., 2014
                   Michael Xavier, 2014
 License     : BSD3
-Maintainer  : michael@michaelxavier.net
+Maintainer  : michael.xavier@soostone.com
 Stability   : experimental
-Portability : POSIX
 
 URI.ByteString aims to be an RFC3986 compliant URI parser that uses
-efficient ByteStrings for parsing and representing the data.
+efficient ByteStrings for parsing and representing the data. This
+module provides a URI datatype as well as a parser and serializer.
+
+Note that this library is an early release and may have issues. It is
+currently being used in production and no issues have been
+encountered, however. Please report any issues encountered to the
+issue tracker.
 
 -}
 module URI.ByteString
@@ -61,7 +66,7 @@ import           Text.Read                  (readMaybe)
 
 
 -- | Required first component to referring to a specification for the
--- remainder of the URI's components
+-- remainder of the URI's components, e.g. "http" or "https"
 newtype Scheme = Scheme { getScheme :: ByteString }
   deriving (Show, Eq, Generic, Typeable)
 
@@ -73,7 +78,7 @@ newtype Host = Host { getHost :: ByteString }
 
 -------------------------------------------------------------------------------
 -- | While some libraries have chosen to limit this to a Word16, the
--- spec seems to only specify that the string be comprised of digits.
+-- spec only specifies that the string be comprised of digits.
 newtype Port = Port { getPort :: Int }
   deriving (Show, Eq, Generic, Typeable)
 
@@ -82,7 +87,7 @@ newtype Port = Port { getPort :: Int }
 data Authority = Authority {
       authorityUserInfo :: Maybe UserInfo
     , authorityHost     :: Host
-    , authorityPort     :: Maybe Port -- probably a numeric type
+    , authorityPort     :: Maybe Port
     } deriving (Show, Eq, Generic, Typeable)
 
 
@@ -105,6 +110,7 @@ data URI = URI {
     , uriPath      :: ByteString
     , uriQuery     :: Query
     , uriFragment  :: Maybe ByteString
+    -- ^ URI fragment. Does not include the #
     } deriving (Show, Eq, Generic, Typeable)
 
 
