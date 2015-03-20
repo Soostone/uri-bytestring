@@ -3,7 +3,6 @@
    CLOSED: [2015-03-18 Wed 16:03]
 ** DONE IPVFuture Parsing
    CLOSED: [2015-03-18 Wed 16:03]
-** TODO distinguish malformed ip addresses from domains
 * TODO more complete test suite
 ** TODO failure cases
 ** TODO copy test suite from another project
@@ -19,11 +18,14 @@
   CLOSED: [2014-08-09 Sat 21:31]
 * DONE check haddocks
   CLOSED: [2014-08-09 Sat 21:32]
-* TODO travis
+* DONE travis
+  CLOSED: [2015-03-19 Thu 16:24]
 * TODO URNs?
 * DONE drop http-types dependency
   CLOSED: [2015-03-17 Tue 14:08]
-* TODO add bytestring serialization for URI
-* TODO quickcheck suite for testing parse . serialize == id
+* DONE add bytestring serialization for URI
+  CLOSED: [2015-03-20 Fri 08:54]
 * TODO source code cleanup
   want to use Soostone's coding standards
+* TODO numeric port?
+* TODO optimize encoding

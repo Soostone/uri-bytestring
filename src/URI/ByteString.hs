@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TupleSections              #-}
 {-|
 
@@ -19,7 +20,7 @@ efficient ByteStrings for parsing and representing the data.
 
 -}
 module URI.ByteString
-    (-- URI-related types
+    (-- * URI-related types
       Scheme(..)
     , Host(..)
     , Port(..)
@@ -32,8 +33,10 @@ module URI.ByteString
     , URIParserOptions(..)
     , strictURIParserOptions
     , laxURIParserOptions
-    -- Parsing
+    -- * Parsing
     , parseURI
+    -- * Serializing
+    , serializeURI
     ) where
 
 -------------------------------------------------------------------------------
@@ -44,6 +47,8 @@ import qualified Data.Attoparsec.ByteString as A
 import           Data.Bits
 import           Data.ByteString            (ByteString)
 import qualified Data.ByteString            as BS
+import qualified Data.ByteString.Char8      as BS8
+import           Data.Char                  (ord)
 import           Data.Ix
 import           Data.List                  (delete, stripPrefix)
 import           Data.Maybe
@@ -74,18 +79,18 @@ newtype Port = Port { getPort :: ByteString }
 
 
 -------------------------------------------------------------------------------
-data Authority = Authority
-   { authorityUserInfo :: Maybe UserInfo
-   , authorityHost     :: Host
-   , authorityPort     :: Maybe Port -- probably a numeric type
-   } deriving (Show, Eq, Generic, Typeable)
+data Authority = Authority {
+      authorityUserInfo :: Maybe UserInfo
+    , authorityHost     :: Host
+    , authorityPort     :: Maybe Port -- probably a numeric type
+    } deriving (Show, Eq, Generic, Typeable)
 
 
 -------------------------------------------------------------------------------
-data UserInfo = UserInfo
-  { uiUsername :: ByteString
-  , uiPassword :: ByteString
-  } deriving (Show, Eq, Generic, Typeable)
+data UserInfo = UserInfo {
+      uiUsername :: ByteString
+    , uiPassword :: ByteString
+    } deriving (Show, Eq, Generic, Typeable)
 
 
 -------------------------------------------------------------------------------
@@ -94,8 +99,8 @@ newtype Query = Query { getQuery :: [(ByteString, ByteString)] }
 
 
 -------------------------------------------------------------------------------
-data URI = URI
-    { uriScheme    :: Scheme
+data URI = URI {
+      uriScheme    :: Scheme
     , uriAuthority :: Maybe Authority
     , uriPath      :: ByteString
     , uriQuery     :: Query
@@ -107,8 +112,8 @@ data URI = URI
 -------------------------------------------------------------------------------
 -- | Options for the parser. You will probably want to use either
 -- "strictURIParserOptions" or "laxURIParserOptions"
-data URIParserOptions = URIParserOptions
-    { upoValidQueryChar :: Word8 -> Bool
+data URIParserOptions = URIParserOptions {
+      upoValidQueryChar :: Word8 -> Bool
     }
 
 
@@ -117,8 +122,8 @@ data URIParserOptions = URIParserOptions
 -- if you can be certain that your URIs are properly encoded or if you
 -- want parsing to fail if they deviate from the spec at all.
 strictURIParserOptions :: URIParserOptions
-strictURIParserOptions =  URIParserOptions
-    { upoValidQueryChar = validForQuery
+strictURIParserOptions =  URIParserOptions {
+      upoValidQueryChar = validForQuery
     }
 
 
@@ -128,9 +133,54 @@ strictURIParserOptions =  URIParserOptions
 --
 -- * Allows non-encoded [ and ] in query string
 laxURIParserOptions :: URIParserOptions
-laxURIParserOptions = URIParserOptions
-    { upoValidQueryChar = validForQueryLax
+laxURIParserOptions = URIParserOptions {
+      upoValidQueryChar = validForQueryLax
     }
+
+-------------------------------------------------------------------------------
+-- | URI Serializer
+-------------------------------------------------------------------------------
+
+-- | Serialize a URI into a strict ByteString
+-- Example:
+--
+-- >>> serializeURI $ URI {uriScheme = Scheme {getScheme = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {getHost = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {getQuery = [("bar","baz")]}, uriFragment = Just "quux"}
+-- "http://www.example.org/foo?bar=baz#quux"
+serializeURI :: URI -> ByteString
+serializeURI URI {..} = scheme <> "://" <>
+                        authority <>
+                        path <>
+                        query <>
+                        fragment
+  where
+    path = BS.intercalate (BS.singleton slash) $ map urlEncodePath segs
+    segs = BS.split slash uriPath
+    scheme = getScheme uriScheme
+    authority = maybe mempty serializeAuthority uriAuthority
+    query = serializeQuery uriQuery
+    fragment = maybe mempty ("#" <>) uriFragment
+
+
+-------------------------------------------------------------------------------
+serializeQuery :: Query -> ByteString
+serializeQuery (Query []) = mempty
+serializeQuery (Query ps) = "?" <> BS.intercalate "&" (map serializePair ps)
+  where
+    serializePair (k, v) = urlEncodeQuery k <> "=" <> urlEncodeQuery v
+
+
+-------------------------------------------------------------------------------
+serializeAuthority :: Authority -> ByteString
+serializeAuthority Authority {..} = userinfo <> host <> port
+  where
+    userinfo = maybe mempty serializeUserInfo authorityUserInfo
+    host = getHost authorityHost
+    port = maybe mempty (BS8.cons ':'. getPort) authorityPort
+
+
+-------------------------------------------------------------------------------
+serializeUserInfo :: UserInfo -> ByteString
+serializeUserInfo UserInfo {..} = uiUsername <> ":" <> uiPassword
 
 
 -------------------------------------------------------------------------------
@@ -154,7 +204,6 @@ data URIParseError = MalformedScheme SchemaError
                    | MalformedPath
                    | OtherError String -- ^ Catchall for unpredictable errors
                    deriving (Show, Eq, Generic, Read, Typeable)
-
 
 
 -------------------------------------------------------------------------------
@@ -481,6 +530,20 @@ unreserved = alphaNum ++ "~._-"
 
 
 -------------------------------------------------------------------------------
+unreserved8 :: [Word8]
+unreserved8 = map ord8 unreserved
+
+
+-------------------------------------------------------------------------------
+unreservedPath8 :: [Word8]
+unreservedPath8 = unreserved8 ++ map ord8 ":@&=+$,"
+
+-------------------------------------------------------------------------------
+ord8 :: Char -> Word8
+ord8 = fromIntegral . ord
+
+
+-------------------------------------------------------------------------------
 -- | pc-encoded technically is % HEXDIG HEXDIG but that's handled by
 -- the previous alphaNum constraint. May need to double back with a
 -- parser to ensure pct-encoded never exceeds 2 hexdigs after
@@ -546,6 +609,15 @@ hash = 35
 -------------------------------------------------------------------------------
 period :: Word8
 period = 46
+
+
+-------------------------------------------------------------------------------
+percent :: Word8
+percent = 37
+
+-------------------------------------------------------------------------------
+slash :: Word8
+slash = 47
 
 
 -------------------------------------------------------------------------------
@@ -716,3 +788,29 @@ urlDecode replacePlus z = fst $ BS.unfoldrN (BS.length z) go z
         | otherwise = Nothing
     combine :: Word8 -> Word8 -> Word8
     combine a b = shiftL a 4 .|. b
+
+
+-------------------------------------------------------------------------------
+--TODO: keep an eye on perf here. seems like a good use case for a DList. the word8 list could be a set/hashset
+-- | Percent-encoding for URLs.
+urlEncode' :: [Word8] -> ByteString -> ByteString
+urlEncode' extraUnreserved = BS.pack . mconcat . map encodeChar . BS.unpack
+    where
+      encodeChar ch | isUnreserved ch = [ch]
+                    | otherwise       = pct ch
+
+      isUnreserved ch = inClass alphaNum ch || ch `elem` extraUnreserved
+
+      pct v = let (a, b) = v `divMod` 16 in [percent, pct' a, pct' b]
+      pct' i | i < 10    = 48 + i -- zero (0)
+             | otherwise = 65 + i - 10 -- 65: A
+
+
+-------------------------------------------------------------------------------
+urlEncodeQuery :: ByteString -> ByteString
+urlEncodeQuery = urlEncode' unreserved8
+
+
+-------------------------------------------------------------------------------
+urlEncodePath :: ByteString -> ByteString
+urlEncodePath = urlEncode' unreservedPath8

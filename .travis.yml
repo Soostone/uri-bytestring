@@ -7,4 +7,4 @@ install:
   - cabal install doctest
   - cabal install --only-dependencies --enable-tests --enable-benchmarks
 script:
-  - cabal configure --enable-tests --enable-benchmarks && cabal build && cabal test && doctest -isrc -XOverloadedStrings src/URI/ByteString.hs && cabal bench
+  - cabal configure --enable-tests --enable-benchmarks && cabal build && cabal test && make doctest && cabal bench

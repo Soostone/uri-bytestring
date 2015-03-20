@@ -24,11 +24,32 @@ instance NFData URIParseError
 main :: IO ()
 main = defaultMain
   [
-    bench "Network.URI.parseURI" $ nf NU.parseURI exampleUri
-  , bench "URI.ByteString.parseURI strict" $ nf (parseURI strictURIParserOptions) exampleUri
-  , bench "URI.ByteString.parseURI lax" $ nf (parseURI laxURIParserOptions) exampleUri
+    bgroup "parsing"
+      [
+        bench "Network.URI.parseURI" $ nf NU.parseURI exampleURIS
+      , bench "URI.ByteString.parseURI strict" $ nf (parseURI strictURIParserOptions) exampleURIS
+      , bench "URI.ByteString.parseURI lax" $ nf (parseURI laxURIParserOptions) exampleURIS
+      ]
+  , bgroup "serializing"
+    [
+      bench "URI.ByteString.serializeURI" $ nf serializeURI exampleURI
+    ]
   ]
 
 
-exampleUri :: IsString s => s
-exampleUri = "http://google.com/example?params=youbetcha"
+exampleURIS :: IsString s => s
+exampleURIS = "http://google.com/example?params=youbetcha"
+
+
+exampleURI :: URI
+exampleURI = URI {
+      uriScheme = Scheme "http"
+    , uriAuthority = Just Authority {
+          authorityUserInfo = Nothing
+        , authorityHost = Host "google.com"
+        , authorityPort = Nothing
+        }
+    , uriPath = "/example"
+    , uriQuery = Query [("params", "youbetcha")]
+    , uriFragment = Nothing
+    }
