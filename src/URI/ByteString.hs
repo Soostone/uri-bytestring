@@ -74,7 +74,7 @@ newtype Host = Host { getHost :: ByteString }
 -------------------------------------------------------------------------------
 -- | While some libraries have chosen to limit this to a Word16, the
 -- spec seems to only specify that the string be comprised of digits.
-newtype Port = Port { getPort :: ByteString }
+newtype Port = Port { getPort :: Int }
   deriving (Show, Eq, Generic, Typeable)
 
 
@@ -175,7 +175,7 @@ serializeAuthority Authority {..} = userinfo <> host <> port
   where
     userinfo = maybe mempty serializeUserInfo authorityUserInfo
     host = getHost authorityHost
-    port = maybe mempty (BS8.cons ':'. getPort) authorityPort
+    port = maybe mempty (BS8.cons ':'. BS8.pack . show . getPort) authorityPort
 
 
 -------------------------------------------------------------------------------
@@ -417,7 +417,7 @@ mPortParser = word8' colon `thenJust` portParser
 -- | Parses port number from the hostname. Colon separator must be
 -- handled elsewhere.
 portParser :: URIParser Port
-portParser = (Port <$> A.takeWhile1 isDigit) `orFailWith` MalformedPort
+portParser = (Port . bsToNum <$> A.takeWhile1 isDigit) `orFailWith` MalformedPort
 
 
 -------------------------------------------------------------------------------
