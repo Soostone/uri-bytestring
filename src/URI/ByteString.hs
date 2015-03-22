@@ -54,7 +54,6 @@ import           Data.ByteString            (ByteString)
 import qualified Data.ByteString            as BS
 import           Data.ByteString.Builder    (Builder)
 import qualified Data.ByteString.Builder    as BB
-import qualified Data.ByteString.Char8      as BS8
 import           Data.Char                  (ord)
 import           Data.Ix
 import           Data.List                  (delete, intersperse, stripPrefix)
@@ -201,11 +200,6 @@ bs = BB.byteString
 -------------------------------------------------------------------------------
 c8 :: Char -> Builder
 c8 = BB.char8
-
--------------------------------------------------------------------------------
-w8 :: Word8 -> Builder
-w8 = BB.word8
-
 
 
 -------------------------------------------------------------------------------
@@ -637,10 +631,6 @@ period = 46
 
 
 -------------------------------------------------------------------------------
-percent :: Word8
-percent = 37
-
--------------------------------------------------------------------------------
 slash :: Word8
 slash = 47
 
@@ -795,8 +785,8 @@ urlDecode
     -> BS.ByteString
 urlDecode replacePlus z = fst $ BS.unfoldrN (BS.length z) go z
   where
-    go bs =
-        case BS.uncons bs of
+    go bs' =
+        case BS.uncons bs' of
             Nothing -> Nothing
             Just (43, ws) | replacePlus -> Just (32, ws) -- plus to space
             Just (37, ws) -> Just $ fromMaybe (37, ws) $ do -- percent
@@ -821,13 +811,13 @@ urlDecode replacePlus z = fst $ BS.unfoldrN (BS.length z) go z
 urlEncode' :: [Word8] -> ByteString -> Builder
 urlEncode' extraUnreserved = mconcat . map encodeChar . BS.unpack
     where
-      encodeChar ch | unreserved ch = BB.word8 ch
+      encodeChar ch | unreserved' ch = BB.word8 ch
                     | otherwise     = h2 ch
 
-      unreserved ch | ch >= 65 && ch <= 90  = True -- A-Z
+      unreserved' ch | ch >= 65 && ch <= 90  = True -- A-Z
                     | ch >= 97 && ch <= 122 = True -- a-z
                     | ch >= 48 && ch <= 57  = True -- 0-9
-      unreserved c = c `elem` extraUnreserved
+      unreserved' c = c `elem` extraUnreserved
 
       h2 v = let (a, b) = v `divMod` 16 in bs $ BS.pack [37, h a, h b] -- percent (%)
       h i | i < 10    = 48 + i -- zero (0)
