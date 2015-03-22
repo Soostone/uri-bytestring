@@ -52,10 +52,12 @@ import qualified Data.Attoparsec.ByteString as A
 import           Data.Bits
 import           Data.ByteString            (ByteString)
 import qualified Data.ByteString            as BS
+import           Data.ByteString.Builder    (Builder)
+import qualified Data.ByteString.Builder    as BB
 import qualified Data.ByteString.Char8      as BS8
 import           Data.Char                  (ord)
 import           Data.Ix
-import           Data.List                  (delete, stripPrefix)
+import           Data.List                  (delete, intersperse, stripPrefix)
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Typeable
@@ -150,43 +152,60 @@ laxURIParserOptions = URIParserOptions {
 -- | Serialize a URI into a strict ByteString
 -- Example:
 --
--- >>> serializeURI $ URI {uriScheme = Scheme {getScheme = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {getHost = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {getQuery = [("bar","baz")]}, uriFragment = Just "quux"}
+-- >>> BB.toLazyByteString $ serializeURI $ URI {uriScheme = Scheme {getScheme = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {getHost = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {getQuery = [("bar","baz")]}, uriFragment = Just "quux"}
 -- "http://www.example.org/foo?bar=baz#quux"
-serializeURI :: URI -> ByteString
-serializeURI URI {..} = scheme <> "://" <>
+serializeURI :: URI -> Builder
+serializeURI URI {..} = scheme <> BB.string8 "://" <>
                         authority <>
                         path <>
                         query <>
                         fragment
   where
-    path = BS.intercalate (BS.singleton slash) $ map urlEncodePath segs
+    path = mconcat $ intersperse (c8 '/') $ map urlEncodePath segs
     segs = BS.split slash uriPath
-    scheme = getScheme uriScheme
+    scheme = bs $ getScheme uriScheme
     authority = maybe mempty serializeAuthority uriAuthority
     query = serializeQuery uriQuery
-    fragment = maybe mempty ("#" <>) uriFragment
+    fragment = maybe mempty (\s -> c8 '#' <> bs s) uriFragment
 
 
 -------------------------------------------------------------------------------
-serializeQuery :: Query -> ByteString
+serializeQuery :: Query -> Builder
 serializeQuery (Query []) = mempty
-serializeQuery (Query ps) = "?" <> BS.intercalate "&" (map serializePair ps)
+serializeQuery (Query ps) =
+    c8 '?' <> mconcat (intersperse (c8 '&') (map serializePair ps))
   where
-    serializePair (k, v) = urlEncodeQuery k <> "=" <> urlEncodeQuery v
+    serializePair (k, v) = urlEncodeQuery k <> c8 '=' <> urlEncodeQuery v
 
 
 -------------------------------------------------------------------------------
-serializeAuthority :: Authority -> ByteString
-serializeAuthority Authority {..} = userinfo <> host <> port
+serializeAuthority :: Authority -> Builder
+serializeAuthority Authority {..} = userinfo <> bs host <> port
   where
     userinfo = maybe mempty serializeUserInfo authorityUserInfo
     host = getHost authorityHost
-    port = maybe mempty (BS8.cons ':'. BS8.pack . show . getPort) authorityPort
+    port = maybe mempty packPort authorityPort
+    packPort (Port p) = c8 ':' <> BB.string8 (show p)
 
 
 -------------------------------------------------------------------------------
-serializeUserInfo :: UserInfo -> ByteString
-serializeUserInfo UserInfo {..} = uiUsername <> ":" <> uiPassword
+serializeUserInfo :: UserInfo -> Builder
+serializeUserInfo UserInfo {..} = bs uiUsername <> c8 ':' <> bs uiPassword
+
+
+-------------------------------------------------------------------------------
+bs :: ByteString -> Builder
+bs = BB.byteString
+
+
+-------------------------------------------------------------------------------
+c8 :: Char -> Builder
+c8 = BB.char8
+
+-------------------------------------------------------------------------------
+w8 :: Word8 -> Builder
+w8 = BB.word8
+
 
 
 -------------------------------------------------------------------------------
@@ -799,24 +818,27 @@ urlDecode replacePlus z = fst $ BS.unfoldrN (BS.length z) go z
 -------------------------------------------------------------------------------
 --TODO: keep an eye on perf here. seems like a good use case for a DList. the word8 list could be a set/hashset
 -- | Percent-encoding for URLs.
-urlEncode' :: [Word8] -> ByteString -> ByteString
-urlEncode' extraUnreserved = BS.pack . mconcat . map encodeChar . BS.unpack
+urlEncode' :: [Word8] -> ByteString -> Builder
+urlEncode' extraUnreserved = mconcat . map encodeChar . BS.unpack
     where
-      encodeChar ch | isUnreserved ch = [ch]
-                    | otherwise       = pct ch
+      encodeChar ch | unreserved ch = BB.word8 ch
+                    | otherwise     = h2 ch
 
-      isUnreserved ch = inClass alphaNum ch || ch `elem` extraUnreserved
+      unreserved ch | ch >= 65 && ch <= 90  = True -- A-Z
+                    | ch >= 97 && ch <= 122 = True -- a-z
+                    | ch >= 48 && ch <= 57  = True -- 0-9
+      unreserved c = c `elem` extraUnreserved
 
-      pct v = let (a, b) = v `divMod` 16 in [percent, pct' a, pct' b]
-      pct' i | i < 10    = 48 + i -- zero (0)
-             | otherwise = 65 + i - 10 -- 65: A
+      h2 v = let (a, b) = v `divMod` 16 in bs $ BS.pack [37, h a, h b] -- percent (%)
+      h i | i < 10    = 48 + i -- zero (0)
+          | otherwise = 65 + i - 10 -- 65: A
 
 
 -------------------------------------------------------------------------------
-urlEncodeQuery :: ByteString -> ByteString
+urlEncodeQuery :: ByteString -> Builder
 urlEncodeQuery = urlEncode' unreserved8
 
 
 -------------------------------------------------------------------------------
-urlEncodePath :: ByteString -> ByteString
+urlEncodePath :: ByteString -> Builder
 urlEncodePath = urlEncode' unreservedPath8

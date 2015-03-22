@@ -5,8 +5,9 @@ module Main (main) where
 -------------------------------------------------------------------------------
 import           Control.DeepSeq.Generics
 import           Criterion.Main
+import           Data.ByteString.Builder
 import           Data.String
-import qualified Network.URI                as NU
+import qualified Network.URI              as NU
 -------------------------------------------------------------------------------
 import           URI.ByteString
 -------------------------------------------------------------------------------
@@ -32,7 +33,7 @@ main = defaultMain
       ]
   , bgroup "serializing"
     [
-      bench "URI.ByteString.serializeURI" $ nf serializeURI exampleURI
+      bench "URI.ByteString.serializeURI" $ nf (toLazyByteString . serializeURI) exampleURI
     ]
   ]
 
