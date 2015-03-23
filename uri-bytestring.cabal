@@ -36,7 +36,9 @@ library
   default-language:    Haskell2010
 
   if flag(lib-Werror)
-    ghc-options: -Wall -Werror
+    ghc-options: -Werror
+
+  ghc-options: -Wall
 
 test-suite test
   type: exitcode-stdio-1.0
