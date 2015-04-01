@@ -11,8 +11,8 @@ copyright:           Soostone Inc.
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.16
-homepage:            https://travis-ci.org/Soostone/uri-bytestring
-bug-reports:         https://travis-ci.org/Soostone/uri-bytestring/issues
+homepage:            https://github.com/Soostone/uri-bytestring
+bug-reports:         https://github.com/Soostone/uri-bytestring/issues
 extra-source-files:
   README.md
   changelog.md
