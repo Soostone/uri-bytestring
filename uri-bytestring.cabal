@@ -25,6 +25,10 @@ flag lib-Werror
 library
   exposed-modules:
     URI.ByteString
+  other-modules:
+    URI.ByteString.Lens
+    URI.ByteString.Types
+    URI.ByteString.Internal
 
   build-depends:
 
@@ -55,6 +59,8 @@ test-suite test
     , attoparsec
     , base
     , bytestring
+    , lens
+    , quickcheck-instances
   default-language:    Haskell2010
 
 benchmark bench
