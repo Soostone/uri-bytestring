@@ -57,10 +57,10 @@ parseUriTests = testGroup "parseUri" [
           (Query [("foo", "bar"), ("foo", "baz quux")])
           (Just "frag")
   , testParses "http://www.google.com:80/aclk?sa=l&ai=CChPOVvnoU8fMDI_QsQeE4oGwDf664-EF7sq01HqV1MMFCAAQAigDUO3VhpcDYMnGqYvApNgPoAGq3vbiA8gBAaoEKE_QQwekDUoMeW9IQghV4HRuzL_l-7vVjlML559kix6XOcC1c4Tb9xeAB76hiR2QBwGoB6a-Gw&sig=AOD64_3Ulyu0DcDsc1AamOIxq63RF9u4zQ&rct=j&q=&ved=0CCUQ0Qw&adurl=http://www.aruba.com/where-to-stay/hotels-and-resorts%3Ftid%3D122"
-      URI { uriScheme = Scheme {getScheme = "http"}
-          , uriAuthority = Just Authority {authorityUserInfo = Nothing, authorityHost = Host {getHost = "www.google.com"}, authorityPort = Just (Port 80)}
-          , uriPath = "/aclk"
-          , uriQuery = Query {getQuery =
+      URI { _uriScheme = Scheme {_schemeBS = "http"}
+          , _uriAuthority = Just Authority {_authorityUserInfo = Nothing, _authorityHost = Host {_hostBS = "www.google.com"}, _authorityPort = Just (Port 80)}
+          , _uriPath = "/aclk"
+          , _uriQuery = Query {_queryPairs =
               [("sa", "l")
               ,("ai", "CChPOVvnoU8fMDI_QsQeE4oGwDf664-EF7sq01HqV1MMFCAAQAigDUO3VhpcDYMnGqYvApNgPoAGq3vbiA8gBAaoEKE_QQwekDUoMeW9IQghV4HRuzL_l-7vVjlML559kix6XOcC1c4Tb9xeAB76hiR2QBwGoB6a-Gw")
               ,("sig", "AOD64_3Ulyu0DcDsc1AamOIxq63RF9u4zQ")
@@ -69,7 +69,7 @@ parseUriTests = testGroup "parseUri" [
               ,("ved", "0CCUQ0Qw")
               ,("adurl", "http://www.aruba.com/where-to-stay/hotels-and-resorts?tid=122")
               ]}
-          , uriFragment = Nothing
+          , _uriFragment = Nothing
           }
 
   , testParseFailure "$$$$://www.example.org/" (MalformedScheme NonAlphaLeading)

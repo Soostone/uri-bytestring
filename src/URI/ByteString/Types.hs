@@ -14,49 +14,49 @@ import           GHC.Generics
 
 -- | Required first component to referring to a specification for the
 -- remainder of the URI's components, e.g. "http" or "https"
-newtype Scheme = Scheme { getScheme :: ByteString }
+newtype Scheme = Scheme { _schemeBS :: ByteString }
   deriving (Show, Eq, Generic, Typeable)
 
 
 -------------------------------------------------------------------------------
-newtype Host = Host { getHost :: ByteString }
+newtype Host = Host { _hostBS :: ByteString }
   deriving (Show, Eq, Generic, Typeable)
 
 
 -------------------------------------------------------------------------------
 -- | While some libraries have chosen to limit this to a Word16, the
 -- spec only specifies that the string be comprised of digits.
-newtype Port = Port { getPort :: Int }
+newtype Port = Port { _portNumber :: Int }
   deriving (Show, Eq, Generic, Typeable)
 
 
 -------------------------------------------------------------------------------
 data Authority = Authority {
-      authorityUserInfo :: Maybe UserInfo
-    , authorityHost     :: Host
-    , authorityPort     :: Maybe Port
+      _authorityUserInfo :: Maybe UserInfo
+    , _authorityHost     :: Host
+    , _authorityPort     :: Maybe Port
     } deriving (Show, Eq, Generic, Typeable)
 
 
 -------------------------------------------------------------------------------
 data UserInfo = UserInfo {
-      uiUsername :: ByteString
-    , uiPassword :: ByteString
+      _uiUsername :: ByteString
+    , _uiPassword :: ByteString
     } deriving (Show, Eq, Generic, Typeable)
 
 
 -------------------------------------------------------------------------------
-newtype Query = Query { getQuery :: [(ByteString, ByteString)] }
+newtype Query = Query { _queryPairs :: [(ByteString, ByteString)] }
               deriving (Show, Eq, Monoid)
 
 
 -------------------------------------------------------------------------------
 data URI = URI {
-      uriScheme    :: Scheme
-    , uriAuthority :: Maybe Authority
-    , uriPath      :: ByteString
-    , uriQuery     :: Query
-    , uriFragment  :: Maybe ByteString
+      _uriScheme    :: Scheme
+    , _uriAuthority :: Maybe Authority
+    , _uriPath      :: ByteString
+    , _uriQuery     :: Query
+    , _uriFragment  :: Maybe ByteString
     -- ^ URI fragment. Does not include the #
     } deriving (Show, Eq, Generic, Typeable)
 
@@ -66,7 +66,7 @@ data URI = URI {
 -- | Options for the parser. You will probably want to use either
 -- "strictURIParserOptions" or "laxURIParserOptions"
 data URIParserOptions = URIParserOptions {
-      upoValidQueryChar :: Word8 -> Bool
+      _upoValidQueryChar :: Word8 -> Bool
     }
 
 

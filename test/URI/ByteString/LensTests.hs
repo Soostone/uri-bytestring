@@ -5,13 +5,11 @@ module URI.ByteString.LensTests
 
 -------------------------------------------------------------------------------
 import           Control.Lens
-import           Data.ByteString.Builder   (toLazyByteString)
-import           Test.QuickCheck.Instances
 import           Test.Tasty
 import           Test.Tasty.QuickCheck
 -------------------------------------------------------------------------------
 import           URI.ByteString
-import           URI.ByteString.Arbitrary
+import           URI.ByteString.Arbitrary ()
 import           URI.ByteString.Lens
 -------------------------------------------------------------------------------
 
@@ -20,68 +18,53 @@ import           URI.ByteString.Lens
 tests :: TestTree
 tests = testGroup "URI.ByteString.Lens"
   [
-    testProperty "schemeBS Iso" $ \bs ->
+    testProperty "schemeBS Lens" $ \bs bs' ->
       let wrapped = Scheme bs
-      in wrapped ^. schemeBS === getScheme wrapped .&&.
-         bs ^. from schemeBS === wrapped
-  , testProperty "hostBS Iso" $ \bs ->
+      in (wrapped ^. schemeBS) === _schemeBS wrapped .&&.
+         (wrapped & schemeBS .~ bs') === wrapped { _schemeBS = bs'}
+  , testProperty "hostBS Lens" $ \bs bs' ->
       let wrapped = Host bs
-      in wrapped ^. hostBS === getHost wrapped .&&.
-         bs ^. from hostBS === wrapped
-
-  , testProperty "portNumber Iso" $ \bs ->
-      let wrapped = Port bs
-      in wrapped ^. portNumber === getPort wrapped .&&.
-         bs ^. from portNumber === wrapped
-
-  , testProperty "queryPairs Iso" $ \ps ->
+      in (wrapped ^. hostBS) === _hostBS wrapped .&&.
+         (wrapped & hostBS .~ bs') === wrapped { _hostBS = bs'}
+  , testProperty "portNumber Lens" $ \n n' ->
+      let wrapped = Port n
+      in (wrapped ^. portNumber) === _portNumber wrapped .&&.
+         (wrapped & portNumber .~ n') === wrapped { _portNumber = n'}
+  , testProperty "queryPairs Lens" $ \ps ps' ->
       let wrapped = Query ps
-      in wrapped ^. queryPairs === getQuery wrapped .&&.
-         ps ^. from queryPairs === wrapped
+      in wrapped ^. queryPairs === _queryPairs wrapped .&&.
+         (wrapped & queryPairs .~ ps') === wrapped { _queryPairs = ps'}
 
-  , testProperty "authorityUserInfo_ Lens" $ \a ui ->
-     (a ^. authorityUserInfo_ === authorityUserInfo a) .&&.
-     ((a & authorityUserInfo_ .~ ui) === a { authorityUserInfo = ui })
-  , testProperty "authorityHost_ Lens" $ \a host ->
-     (a ^. authorityHost_ === authorityHost a) .&&.
-     ((a & authorityHost_ .~ host) === a { authorityHost = host })
-  , testProperty "authorityPort_ Lens" $ \a port ->
-     (a ^. authorityPort_ === authorityPort a) .&&.
-     ((a & authorityPort_ .~ port) === a { authorityPort = port })
+  , testProperty "authorityUserInfo Lens" $ \a ui ->
+     (a ^. authorityUserInfo === _authorityUserInfo a) .&&.
+     ((a & authorityUserInfo .~ ui) === a { _authorityUserInfo = ui })
+  , testProperty "authorityHost Lens" $ \a host ->
+     (a ^. authorityHost === _authorityHost a) .&&.
+     ((a & authorityHost .~ host) === a { _authorityHost = host })
+  , testProperty "authorityPort Lens" $ \a port ->
+     (a ^. authorityPort === _authorityPort a) .&&.
+     ((a & authorityPort .~ port) === a { _authorityPort = port })
 
-  , testProperty "uiUsername_ Lens" $ \ui bs ->
-     (ui ^. uiUsername_ === uiUsername ui) .&&.
-     ((ui & uiUsername_ .~ bs) === ui { uiUsername = bs })
-  , testProperty "uiPassword_ Lens" $ \ui bs ->
-     (ui ^. uiPassword_ === uiPassword ui) .&&.
-     ((ui & uiPassword_ .~ bs) === ui { uiPassword = bs })
+  , testProperty "uiUsername Lens" $ \ui bs ->
+     (ui ^. uiUsername === _uiUsername ui) .&&.
+     ((ui & uiUsername .~ bs) === ui { _uiUsername = bs })
+  , testProperty "uiPassword Lens" $ \ui bs ->
+     (ui ^. uiPassword === _uiPassword ui) .&&.
+     ((ui & uiPassword .~ bs) === ui { _uiPassword = bs })
 
-  , testProperty "uriScheme_ Lens" $ \uri x ->
-     (uri ^. uriScheme_ === uriScheme uri) .&&.
-     ((uri & uriScheme_ .~ x) === uri { uriScheme = x })
-  , testProperty "uriAuthority_ Lens" $ \uri x ->
-     (uri ^. uriAuthority_ === uriAuthority uri) .&&.
-     ((uri & uriAuthority_ .~ x) === uri { uriAuthority = x })
-  , testProperty "uriPath_ Lens" $ \uri x ->
-     (uri ^. uriPath_ === uriPath uri) .&&.
-     ((uri & uriPath_ .~ x) === uri { uriPath = x })
-  , testProperty "uriQuery_ Lens" $ \uri x ->
-     (uri ^. uriQuery_ === uriQuery uri) .&&.
-     ((uri & uriQuery_ .~ x) === uri { uriQuery = x })
-  , testProperty "uriFragment_ Lens" $ \uri x ->
-     (uri ^. uriFragment_ === uriFragment uri) .&&.
-     ((uri & uriFragment_ .~ x) === uri { uriFragment = x })
-
-  , testProperty "re uriByteString === serializeURI, irrespective of options" $ \uri (Blind opts) ->
-     uri ^. re (uriByteString opts) === (serializeURI uri) ^. to toLazyByteString . strict
-  , testProperty "bs ^? uriByteString opts === hush $ serializeURI opts" $ \uri (Blind opts) ->
-     let bs = (serializeURI uri) ^. to toLazyByteString . strict
-     in (bs ^? (uriByteString opts)) === hush (parseURI opts bs)
+  , testProperty "uriScheme Lens" $ \uri x ->
+     (uri ^. uriScheme === _uriScheme uri) .&&.
+     ((uri & uriScheme .~ x) === uri { _uriScheme = x })
+  , testProperty "uriAuthority Lens" $ \uri x ->
+     (uri ^. uriAuthority === _uriAuthority uri) .&&.
+     ((uri & uriAuthority .~ x) === uri { _uriAuthority = x })
+  , testProperty "uriPath Lens" $ \uri x ->
+     (uri ^. uriPath === _uriPath uri) .&&.
+     ((uri & uriPath .~ x) === uri { _uriPath = x })
+  , testProperty "uriQuery Lens" $ \uri x ->
+     (uri ^. uriQuery === _uriQuery uri) .&&.
+     ((uri & uriQuery .~ x) === uri { _uriQuery = x })
+  , testProperty "uriFragment Lens" $ \uri x ->
+     (uri ^. uriFragment === _uriFragment uri) .&&.
+     ((uri & uriFragment .~ x) === uri { _uriFragment = x })
   ]
-
-
-
--------------------------------------------------------------------------------
-hush :: Either e a -> Maybe a
-hush (Right x) = Just x
-hush _         = Nothing

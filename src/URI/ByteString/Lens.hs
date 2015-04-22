@@ -24,253 +24,208 @@ module URI.ByteString.Lens
     -- * Lenses over 'Port'
     , portNumber
     -- * Lenses over 'Authority'
-    , authorityUserInfo_
-    , authorityHost_
-    , authorityPort_
+    , authorityUserInfo
+    , authorityHost
+    , authorityPort
     -- * Lenses over 'UserInfo'
-    , uiUsername_
-    , uiPassword_
+    , uiUsername
+    , uiPassword
     -- * Lenses over 'Query'
     , queryPairs
     -- * Lenses over 'URI'
-    , uriScheme_
-    , uriAuthority_
-    , uriPath_
-    , uriQuery_
-    , uriFragment_
+    , uriScheme
+    , uriAuthority
+    , uriPath
+    , uriQuery
+    , uriFragment
     -- * Lenses over 'URIParserOptions'
-    , upoValidQueryChar_
-    -- * Prisms
-    , uriByteString
-    , uriByteStringStrict
-    , uriByteStringLax
+    , upoValidQueryChar
     ) where
 
 
 -------------------------------------------------------------------------------
 import           Control.Applicative
 import           Data.ByteString         (ByteString)
-import           Data.ByteString.Builder (toLazyByteString)
-import           Data.ByteString.Lazy    (toStrict)
-import           Data.Profunctor
 import           Data.Word
 -------------------------------------------------------------------------------
-import           URI.ByteString.Internal
 import           URI.ByteString.Types
 -------------------------------------------------------------------------------
 
 
 -- | @
--- schemeBS :: Iso' 'Scheme' 'ByteString'
+-- schemeBS :: Lens' 'Scheme' 'ByteString'
 -- @
 schemeBS
-  :: (Functor f, Profunctor p) =>
-     p ByteString (f ByteString) -> p Scheme (f Scheme)
-schemeBS = iso getScheme Scheme
-
+  :: Functor f => (ByteString -> f ByteString) -> Scheme -> f Scheme
+schemeBS =
+  lens _schemeBS (\a b -> a { _schemeBS = b})
+{-# INLINE schemeBS #-}
 
 -------------------------------------------------------------------------------
 -- | @
--- hostBS :: Iso' 'Host' 'ByteString'
+-- hostBS :: Lens' 'Host' 'ByteString'
 -- @
 hostBS
-  :: (Functor f, Profunctor p) =>
-     p ByteString (f ByteString) -> p Host (f Host)
-hostBS = iso getHost Host
+  :: Functor f => (ByteString -> f ByteString) -> Host -> f Host
+hostBS =
+  lens _hostBS (\a b -> a { _hostBS = b})
+{-# INLINE hostBS #-}
 
 
 -------------------------------------------------------------------------------
 -- | @
--- portNumber :: Iso' 'Port' 'Int'
+-- portNumber :: Lens' 'Port' 'Int'
 -- @
 portNumber
-  :: (Functor f, Profunctor p) => p Int (f Int) -> p Port (f Port)
-portNumber = iso getPort Port
+  :: Functor f => (Int -> f Int) -> Port -> f Port
+portNumber =
+  lens _portNumber (\a b -> a { _portNumber = b})
+{-# INLINE portNumber #-}
 
 
 -------------------------------------------------------------------------------
 -- | @
--- authorityUserInfo_ :: Lens' 'Authority' ('Maybe' 'UserInfo')
+-- authorityUserInfo :: Lens' 'Authority' ('Maybe' 'UserInfo')
 -- @
-authorityUserInfo_
+authorityUserInfo
   :: Functor f =>
      (Maybe UserInfo -> f (Maybe UserInfo)) -> Authority -> f Authority
-authorityUserInfo_ =
-  lens authorityUserInfo (\a b -> a { authorityUserInfo = b})
-
+authorityUserInfo =
+  lens _authorityUserInfo (\a b -> a { _authorityUserInfo = b})
+{-# INLINE authorityUserInfo #-}
 
 -------------------------------------------------------------------------------
 -- | @
--- authorityHost_ :: Lens' 'Authority' 'Host'
+-- authorityHost :: Lens' 'Authority' 'Host'
 -- @
-authorityHost_
+authorityHost
   :: Functor f => (Host -> f Host) -> Authority -> f Authority
-authorityHost_ =
-  lens authorityHost (\a b -> a { authorityHost = b})
-
+authorityHost =
+  lens _authorityHost (\a b -> a { _authorityHost = b})
+{-# INLINE authorityHost #-}
 
 -------------------------------------------------------------------------------
 -- | @
--- authorityPort_ :: Lens' 'Authority' ('Maybe' 'Port')
+-- authorityPort :: Lens' 'Authority' ('Maybe' 'Port')
 -- @
-authorityPort_
+authorityPort
   :: Functor f =>
      (Maybe Port -> f (Maybe Port)) -> Authority -> f Authority
-authorityPort_ =
-  lens authorityPort (\a b -> a { authorityPort = b})
-
+authorityPort =
+  lens _authorityPort (\a b -> a { _authorityPort = b})
+{-# INLINE authorityPort #-}
 
 -------------------------------------------------------------------------------
 -- | @
--- uiUsername_ :: Lens' 'UserInfo' 'ByteString'
+-- uiUsername :: Lens' 'UserInfo' 'ByteString'
 -- @
-uiUsername_
+uiUsername
   :: Functor f =>
      (ByteString -> f ByteString) -> UserInfo -> f UserInfo
-uiUsername_ =
-  lens uiUsername (\a b -> a { uiUsername = b})
+uiUsername =
+  lens _uiUsername (\a b -> a { _uiUsername = b})
+{-# INLINE uiUsername #-}
 
 
 -------------------------------------------------------------------------------
 -- | @
--- uiPassword_ :: Lens' 'UserInfo' 'ByteString'
+-- uiPassword :: Lens' 'UserInfo' 'ByteString'
 -- @
-uiPassword_
+uiPassword
   :: Functor f =>
      (ByteString -> f ByteString) -> UserInfo -> f UserInfo
-uiPassword_ =
-  lens uiPassword (\a b -> a { uiPassword = b})
+uiPassword =
+  lens _uiPassword (\a b -> a { _uiPassword = b})
+{-# INLINE uiPassword #-}
 
 
 -------------------------------------------------------------------------------
 -- | @
--- queryPairs :: Iso' 'Query' [('ByteString', 'ByteString')]
+-- queryPairs :: Lens' 'Query' [('ByteString', 'ByteString')]
 -- @
 queryPairs
-  :: (Functor f, Profunctor p) =>
-     p [(ByteString, ByteString)] (f [(ByteString, ByteString)])
-     -> p Query (f Query)
-queryPairs = iso getQuery Query
+  :: Functor f
+  => ([(ByteString, ByteString)] -> f [(ByteString, ByteString)])
+  -> Query
+  -> f Query
+queryPairs =
+  lens _queryPairs (\a b -> a { _queryPairs = b})
+{-# INLINE queryPairs #-}
 
 
 -------------------------------------------------------------------------------
 -- | @
--- uriScheme_ :: Lens' 'URI' 'Scheme'
+-- uriScheme :: Lens' 'URI' 'Scheme'
 -- @
-uriScheme_ :: Functor f => (Scheme -> f Scheme) -> URI -> f URI
-uriScheme_ =
-  lens uriScheme (\a b -> a { uriScheme = b})
+uriScheme :: Functor f => (Scheme -> f Scheme) -> URI -> f URI
+uriScheme =
+  lens _uriScheme (\a b -> a { _uriScheme = b})
+{-# INLINE uriScheme #-}
 
 
 -------------------------------------------------------------------------------
 -- | @
--- uriAuthority_ :: Lens' 'URI' ('Maybe' 'Authority')
+-- uriAuthority :: Lens' 'URI' ('Maybe' 'Authority')
 -- @
-uriAuthority_
+uriAuthority
   :: Functor f =>
      (Maybe Authority -> f (Maybe Authority)) -> URI -> f URI
-uriAuthority_ =
-  lens uriAuthority (\a b -> a { uriAuthority = b})
+uriAuthority =
+  lens _uriAuthority (\a b -> a { _uriAuthority = b})
+{-# INLINE uriAuthority #-}
 
 
 -------------------------------------------------------------------------------
 -- | @
--- uriPath_ :: Lens' 'URI' 'ByteString'
+-- uriPath :: Lens' 'URI' 'ByteString'
 -- @
-uriPath_
+uriPath
   :: Functor f => (ByteString -> f ByteString) -> URI -> f URI
-uriPath_ =
-  lens uriPath (\a b -> a { uriPath = b})
+uriPath =
+  lens _uriPath (\a b -> a { _uriPath = b})
+{-# INLINE uriPath #-}
 
 
 -------------------------------------------------------------------------------
 -- | @
--- uriQuery_ :: Lens' 'URI' 'Query'
+-- uriQuery :: Lens' 'URI' 'Query'
 -- @
-uriQuery_ :: Functor f => (Query -> f Query) -> URI -> f URI
-uriQuery_ =
-  lens uriQuery (\a b -> a { uriQuery = b})
-
+uriQuery :: Functor f => (Query -> f Query) -> URI -> f URI
+uriQuery =
+  lens _uriQuery (\a b -> a { _uriQuery = b})
+{-# INLINE uriQuery #-}
 
 -------------------------------------------------------------------------------
 -- | @
--- uriFragment_ :: Lens' 'URI' ('Maybe' 'ByteString')
+-- uriFragment :: Lens' 'URI' ('Maybe' 'ByteString')
 -- @
-uriFragment_
+uriFragment
   :: Functor f =>
      (Maybe ByteString -> f (Maybe ByteString)) -> URI -> f URI
-uriFragment_ =
-  lens uriFragment (\a b -> a { uriFragment = b})
+uriFragment =
+  lens _uriFragment (\a b -> a { _uriFragment = b})
+{-# INLINE uriFragment #-}
 
 
 -------------------------------------------------------------------------------
 -- | @
--- upoValidQueryChar_ :: Lens' URIParserOptions (Word8 -> Bool)
+-- upoValidQueryChar :: Lens' URIParserOptions (Word8 -> Bool)
 -- @
-upoValidQueryChar_
+upoValidQueryChar
   :: Functor f =>
      ((Word8 -> Bool) -> f (Word8 -> Bool))
      -> URIParserOptions -> f URIParserOptions
-upoValidQueryChar_ =
-  lens upoValidQueryChar (\a b -> a { upoValidQueryChar = b})
-
-
--------------------------------------------------------------------------------
--- | @
--- uriByteString :: 'URIParserOptions' -> Prism' 'ByteString' 'URI'
--- @
-uriByteString
-  :: (Applicative f, Choice p) =>
-     URIParserOptions -> p URI (f URI) -> p ByteString (f ByteString)
-uriByteString opts = prism serialize deserialize
-  where
-    serialize = toStrict . toLazyByteString . serializeURI
-    deserialize s = case parseURI opts s of
-      Left _  -> Left s
-      Right x -> Right x
-
-
--------------------------------------------------------------------------------
--- | @
--- uriByteStringStrict :: Prism' 'ByteString' 'URI'
--- @
-uriByteStringStrict
-  :: (Applicative f, Choice p) =>
-     p URI (f URI) -> p ByteString (f ByteString)
-uriByteStringStrict = uriByteString strictURIParserOptions
-
-
--------------------------------------------------------------------------------
--- | @
--- uriByteStringLax :: Prism' 'ByteString' 'URI'
--- @
-uriByteStringLax
-  :: (Applicative f, Choice p) =>
-     p URI (f URI) -> p ByteString (f ByteString)
-uriByteStringLax = uriByteString laxURIParserOptions
+upoValidQueryChar =
+  lens _upoValidQueryChar (\a b -> a { _upoValidQueryChar = b})
+{-# INLINE upoValidQueryChar #-}
 
 
 -------------------------------------------------------------------------------
 -- Lens machinery
 -------------------------------------------------------------------------------
 type Lens s t a b = Functor f => (a -> f b) -> s -> f t
-type Iso s t a b = (Profunctor p, Functor f) => p a (f b) -> p s (f t)
-type Prism s t a b = (Choice p, Applicative f) => p a (f b) -> p s (f t)
-
-
--------------------------------------------------------------------------------
-iso :: (s -> a) -> (b -> t) -> Iso s t a b
-iso sa bt = dimap sa (fmap bt)
-{-# INLINE iso #-}
-
 
 -------------------------------------------------------------------------------
 lens :: (s -> a) -> (s -> b -> t) -> Lens s t a b
 lens sa sbt afb s = sbt s <$> afb (sa s)
 {-# INLINE lens #-}
-
-
--------------------------------------------------------------------------------
-prism :: (b -> t) -> (s -> Either t a) -> Prism s t a b
-prism bt seta = dimap seta (either pure (fmap bt)) . right'
-{-# INLINE prism #-}
