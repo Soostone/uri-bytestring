@@ -5,8 +5,9 @@ module URI.ByteStringTests (tests) where
 
 -------------------------------------------------------------------------------
 import           Control.Lens
-import           Data.ByteString          (ByteString)
+import           Data.ByteString          (ByteString, breakByte, tail)
 import           Data.ByteString.Char8    (unpack)
+import           Data.Char                (ord)
 import           Data.Derive.Arbitrary    (makeArbitrary)
 import           Data.DeriveTH            (derive)
 import           Data.Monoid
@@ -161,6 +162,19 @@ lensTests = testGroup "lenses"
   , testProperty "uriFragmentL Lens" $ \uri x ->
      (uri ^. uriFragmentL === uriFragment uri) .&&.
      ((uri & uriFragmentL .~ x) === uri { uriFragment = x })
+
+  , testProperty "rrAuthorityL Lens" $ \rr x ->
+     (rr ^. rrAuthorityL === rrAuthority rr) .&&.
+     ((rr & rrAuthorityL .~ x) === rr { rrAuthority = x })
+  , testProperty "rrPathL Lens" $ \rr x ->
+     (rr ^. rrPathL === rrPath rr) .&&.
+     ((rr & rrPathL .~ x) === rr { rrPath = x })
+  , testProperty "rrQueryL Lens" $ \rr x ->
+     (rr ^. rrQueryL === rrQuery rr) .&&.
+     ((rr & rrQueryL .~ x) === rr { rrQuery = x })
+  , testProperty "rrFragmentL Lens" $ \rr x ->
+     (rr ^. rrFragmentL === rrFragment rr) .&&.
+     ((rr & rrFragmentL .~ x) === rr { rrFragment = x })
   ]
 
 testParses :: ByteString -> URI -> TestTree
@@ -182,10 +196,22 @@ testParsesLax :: ByteString -> URI -> TestTree
 testParsesLax = testParses' laxURIParserOptions
 
 testParses' :: URIParserOptions -> ByteString -> URI -> TestTree
-testParses' opts s = parseTest opts s . Right
+testParses' opts s u = testGroup "testParses'"
+    [ parseTestURI opts s $ Right u
+    , parseTestRelativeRef opts (makeRelativeRefBS s) $ Right (makeRelativeRefTyped u)
+    ]
+
+makeRelativeRefTyped :: URI -> RelativeRef
+makeRelativeRefTyped u = case u of (URI _ a p q f) -> (RelativeRef a p q f)
+
+makeRelativeRefBS :: ByteString -> ByteString
+makeRelativeRefBS s = case breakByte (fromIntegral $ ord ':') s of (_, x) -> Data.ByteString.tail x
 
 testParseFailure :: ByteString -> URIParseError -> TestTree
-testParseFailure s = parseTest strictURIParserOptions s . Left
+testParseFailure s = parseTestURI strictURIParserOptions s . Left
 
-parseTest :: URIParserOptions -> ByteString -> Either URIParseError URI -> TestTree
-parseTest opts s r = testCase (unpack s) $ parseURI opts s @?= r
+parseTestURI :: URIParserOptions -> ByteString -> Either URIParseError URI -> TestTree
+parseTestURI opts s r = testCase (unpack s) $ parseURI opts s @?= r
+
+parseTestRelativeRef :: URIParserOptions -> ByteString -> Either URIParseError RelativeRef -> TestTree
+parseTestRelativeRef opts s r = testCase (unpack s) $ parseRelativeRef opts s @?= r
