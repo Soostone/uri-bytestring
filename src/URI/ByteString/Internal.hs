@@ -32,7 +32,7 @@ import           URI.ByteString.Types
 -- want parsing to fail if they deviate from the spec at all.
 strictURIParserOptions :: URIParserOptions
 strictURIParserOptions =  URIParserOptions {
-      _upoValidQueryChar = validForQuery
+      upoValidQueryChar = validForQuery
     }
 
 
@@ -43,7 +43,7 @@ strictURIParserOptions =  URIParserOptions {
 -- * Allows non-encoded [ and ] in query string
 laxURIParserOptions :: URIParserOptions
 laxURIParserOptions = URIParserOptions {
-      _upoValidQueryChar = validForQueryLax
+      upoValidQueryChar = validForQueryLax
     }
 
 -------------------------------------------------------------------------------
@@ -53,7 +53,7 @@ laxURIParserOptions = URIParserOptions {
 -- | Serialize a URI into a strict ByteString
 -- Example:
 --
--- >>> BB.toLazyByteString $ serializeURI $ URI {_uriScheme = Scheme {_schemeBS = "http"}, _uriAuthority = Just (Authority {_authorityUserInfo = Nothing, _authorityHost = Host {_hostBS = "www.example.org"}, _authorityPort = Nothing}), _uriPath = "/foo", _uriQuery = Query {_queryPairs = [("bar","baz")]}, _uriFragment = Just "quux"}
+-- >>> BB.toLazyByteString $ serializeURI $ URI {uriScheme = Scheme {schemeBS = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {hostBS = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {queryPairs = [("bar","baz")]}, uriFragment = Just "quux"}
 -- "http://www.example.org/foo?bar=baz#quux"
 serializeURI :: URI -> Builder
 serializeURI URI {..} = scheme <> BB.string8 "://" <>
@@ -63,11 +63,11 @@ serializeURI URI {..} = scheme <> BB.string8 "://" <>
                         fragment
   where
     path = mconcat $ intersperse (c8 '/') $ map urlEncodePath segs
-    segs = BS.split slash _uriPath
-    scheme = bs $ _schemeBS _uriScheme
-    authority = maybe mempty serializeAuthority _uriAuthority
-    query = serializeQuery _uriQuery
-    fragment = maybe mempty (\s -> c8 '#' <> bs s) _uriFragment
+    segs = BS.split slash uriPath
+    scheme = bs $ schemeBS uriScheme
+    authority = maybe mempty serializeAuthority uriAuthority
+    query = serializeQuery uriQuery
+    fragment = maybe mempty (\s -> c8 '#' <> bs s) uriFragment
 
 
 -------------------------------------------------------------------------------
@@ -83,15 +83,15 @@ serializeQuery (Query ps) =
 serializeAuthority :: Authority -> Builder
 serializeAuthority Authority {..} = userinfo <> bs host <> port
   where
-    userinfo = maybe mempty serializeUserInfo _authorityUserInfo
-    host = _hostBS _authorityHost
-    port = maybe mempty packPort _authorityPort
+    userinfo = maybe mempty serializeUserInfo authorityUserInfo
+    host = hostBS authorityHost
+    port = maybe mempty packPort authorityPort
     packPort (Port p) = c8 ':' <> BB.string8 (show p)
 
 
 -------------------------------------------------------------------------------
 serializeUserInfo :: UserInfo -> Builder
-serializeUserInfo UserInfo {..} = bs _uiUsername <> c8 ':' <> bs _uiPassword
+serializeUserInfo UserInfo {..} = bs uiUsername <> c8 ':' <> bs uiPassword
 
 
 -------------------------------------------------------------------------------
@@ -110,7 +110,7 @@ c8 = BB.char8
 -- Example:
 --
 -- >>> parseURI strictURIParserOptions "http://www.example.org/foo?bar=baz#quux"
--- Right (URI {_uriScheme = Scheme {_schemeBS = "http"}, _uriAuthority = Just (Authority {_authorityUserInfo = Nothing, _authorityHost = Host {_hostBS = "www.example.org"}, _authorityPort = Nothing}), _uriPath = "/foo", _uriQuery = Query {_queryPairs = [("bar","baz")]}, _uriFragment = Just "quux"})
+-- Right (URI {uriScheme = Scheme {schemeBS = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {hostBS = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {queryPairs = [("bar","baz")]}, uriFragment = Just "quux"})
 --
 -- >>> parseURI strictURIParserOptions "$$$$://badurl.example.org"
 -- Left (MalformedScheme NonAlphaLeading)
@@ -123,11 +123,11 @@ c8 = BB.char8
 -- Left MalformedQuery
 --
 -- >>> parseURI laxURIParserOptions "http://www.example.org/foo?bar[]=baz"
--- Right (URI {_uriScheme = Scheme {_schemeBS = "http"}, _uriAuthority = Just (Authority {_authorityUserInfo = Nothing, _authorityHost = Host {_hostBS = "www.example.org"}, _authorityPort = Nothing}), _uriPath = "/foo", _uriQuery = Query {_queryPairs = [("bar[]","baz")]}, _uriFragment = Nothing})
+-- Right (URI {uriScheme = Scheme {schemeBS = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {hostBS = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {queryPairs = [("bar[]","baz")]}, uriFragment = Nothing})
 --
--- >>> let myLaxOptions = URIParserOptions { _upoValidQueryChar = liftA2 (||) (_upoValidQueryChar strictURIParserOptions) (inClass "[]")}
+-- >>> let myLaxOptions = URIParserOptions { upoValidQueryChar = liftA2 (||) (upoValidQueryChar strictURIParserOptions) (inClass "[]")}
 -- >>> parseURI myLaxOptions "http://www.example.org/foo?bar[]=baz"
--- Right (URI {_uriScheme = Scheme {_schemeBS = "http"}, _uriAuthority = Just (Authority {_authorityUserInfo = Nothing, _authorityHost = Host {_hostBS = "www.example.org"}, _authorityPort = Nothing}), _uriPath = "/foo", _uriQuery = Query {_queryPairs = [("bar[]","baz")]}, _uriFragment = Nothing})
+-- Right (URI {uriScheme = Scheme {schemeBS = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {hostBS = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {queryPairs = [("bar[]","baz")]}, uriFragment = Nothing})
 parseURI :: URIParserOptions -> ByteString -> Either URIParseError URI
 parseURI opts = parseOnly' OtherError (uriParser opts)
 
@@ -213,7 +213,7 @@ mAuthorityParser = mParse authorityParser
 
 
 -------------------------------------------------------------------------------
--- | Parses the user info section of a URl (i.e. for HTTP Basic
+-- | Parses the user info section of a URL (i.e. for HTTP Basic
 -- Authentication). Note that this will decode any percent-encoded
 -- data.
 userInfoParser :: URIParser UserInfo
@@ -364,7 +364,7 @@ queryParser opts = do
 -- optional. & separators need to be handled further up.
 queryItemParser :: URIParserOptions -> URIParser (ByteString, ByteString)
 queryItemParser opts = do
-  s <- A.takeWhile1 (_upoValidQueryChar opts) `orFailWith` MalformedQuery
+  s <- A.takeWhile1 (upoValidQueryChar opts) `orFailWith` MalformedQuery
   let (k, vWithEquals) = BS.break (== equals) s
   let v = BS.drop 1 vWithEquals
   return (urlDecodeQuery k, urlDecodeQuery v)

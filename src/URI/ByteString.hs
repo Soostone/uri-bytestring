@@ -17,6 +17,11 @@ currently being used in production and no issues have been
 encountered, however. Please report any issues encountered to the
 issue tracker.
 
+This module also provides analogs to Lens over the various types in
+this library. These are written in a generic way to avoid a dependency
+on any particular lens library. You should be able to use these with a
+number of packages including lens and lens-family-core.
+
 -}
 module URI.ByteString
     (-- * URI-related types
@@ -36,9 +41,34 @@ module URI.ByteString
     , parseURI
     -- * Serializing
     , serializeURI
+    -- * Lenses
+    -- ** Lenses over 'Scheme'
+    , schemeBSL
+    -- ** Lenses over 'Host'
+    , hostBSL
+    -- ** Lenses over 'Port'
+    , portNumberL
+    -- ** Lenses over 'Authority'
+    , authorityUserInfoL
+    , authorityHostL
+    , authorityPortL
+    -- ** Lenses over 'UserInfo'
+    , uiUsernameL
+    , uiPasswordL
+    -- ** Lenses over 'Query'
+    , queryPairsL
+    -- ** Lenses over 'URI'
+    , uriSchemeL
+    , uriAuthorityL
+    , uriPathL
+    , uriQueryL
+    , uriFragmentL
+    -- ** Lenses over 'URIParserOptions'
+    , upoValidQueryCharL
     ) where
 
 -------------------------------------------------------------------------------
 import           URI.ByteString.Internal
+import           URI.ByteString.Lens
 import           URI.ByteString.Types
 -------------------------------------------------------------------------------

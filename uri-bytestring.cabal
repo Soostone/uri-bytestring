@@ -25,8 +25,8 @@ flag lib-Werror
 library
   exposed-modules:
     URI.ByteString
-    URI.ByteString.Lens
   other-modules:
+    URI.ByteString.Lens
     URI.ByteString.Types
     URI.ByteString.Internal
 

@@ -4,7 +4,6 @@ module Main (main) where
 import Test.Tasty
 -------------------------------------------------------------------------------
 import URI.ByteStringTests
-import URI.ByteString.LensTests
 -------------------------------------------------------------------------------
 
 
@@ -15,5 +14,4 @@ testSuite :: TestTree
 testSuite = testGroup "uri-bytestring"
   [
     URI.ByteStringTests.tests
-  , URI.ByteString.LensTests.tests
   ]
