@@ -61,6 +61,16 @@ data URI = URI {
     } deriving (Show, Eq, Generic, Typeable)
 
 
+-------------------------------------------------------------------------------
+data RelativeRef = RelativeRef {
+      rrAuthority :: Maybe Authority
+    , rrPath      :: ByteString
+    , rrQuery     :: Query
+    , rrFragment  :: Maybe ByteString
+    -- ^ URI fragment. Does not include the #
+    } deriving (Show, Eq, Generic, Typeable)
+
+
 
 -------------------------------------------------------------------------------
 -- | Options for the parser. You will probably want to use either

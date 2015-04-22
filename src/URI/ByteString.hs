@@ -32,6 +32,7 @@ module URI.ByteString
     , UserInfo(..)
     , Query(..)
     , URI(..)
+    , RelativeRef(..)
     , SchemaError(..)
     , URIParseError(..)
     , URIParserOptions(..)
@@ -39,8 +40,10 @@ module URI.ByteString
     , laxURIParserOptions
     -- * Parsing
     , parseURI
+    , parseRelativeRef
     -- * Serializing
     , serializeURI
+    , serializeRelativeRef
     -- * Lenses
     -- ** Lenses over 'Scheme'
     , schemeBSL
@@ -63,6 +66,11 @@ module URI.ByteString
     , uriPathL
     , uriQueryL
     , uriFragmentL
+    -- ** Lenses over 'RelativeRef'
+    , rrAuthorityL
+    , rrPathL
+    , rrQueryL
+    , rrFragmentL
     -- ** Lenses over 'URIParserOptions'
     , upoValidQueryCharL
     ) where

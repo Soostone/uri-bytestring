@@ -168,6 +168,50 @@ uriFragmentL =
 
 -------------------------------------------------------------------------------
 -- | @
+-- rrAuthorityL :: Lens' 'RelativeRef' ('Maybe' 'Authority')
+-- @
+rrAuthorityL
+  :: Functor f =>
+     (Maybe Authority -> f (Maybe Authority)) -> RelativeRef -> f RelativeRef
+rrAuthorityL =
+  lens rrAuthority (\a b -> a { rrAuthority = b})
+{-# INLINE rrAuthorityL #-}
+
+
+-------------------------------------------------------------------------------
+-- | @
+-- rrPathL :: Lens' 'RelativeRef' 'ByteString'
+-- @
+rrPathL
+  :: Functor f => (ByteString -> f ByteString) -> RelativeRef -> f RelativeRef
+rrPathL =
+  lens rrPath (\a b -> a { rrPath = b})
+{-# INLINE rrPathL #-}
+
+
+-------------------------------------------------------------------------------
+-- | @
+-- rrQueryL :: Lens' 'RelativeRef' 'Query'
+-- @
+rrQueryL :: Functor f => (Query -> f Query) -> RelativeRef -> f RelativeRef
+rrQueryL =
+  lens rrQuery (\a b -> a { rrQuery = b})
+{-# INLINE rrQueryL #-}
+
+-------------------------------------------------------------------------------
+-- | @
+-- rrFragmentL :: Lens' 'RelativeRef' ('Maybe' 'ByteString')
+-- @
+rrFragmentL
+  :: Functor f =>
+     (Maybe ByteString -> f (Maybe ByteString)) -> RelativeRef -> f RelativeRef
+rrFragmentL =
+  lens rrFragment (\a b -> a { rrFragment = b})
+{-# INLINE rrFragmentL #-}
+
+
+-------------------------------------------------------------------------------
+-- | @
 -- upoValidQueryCharL :: Lens' URIParserOptions (Word8 -> Bool)
 -- @
 upoValidQueryCharL
