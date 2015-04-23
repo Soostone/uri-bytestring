@@ -99,6 +99,37 @@ parseUriTests = testGroup "parseUri"
           ""
           (Query [("listParam[]", "foo,bar")])
           Nothing
+
+  , parseTestURI strictURIParserOptions "http://www.example.org/." $
+      Right $ URI
+          (Scheme "http")
+          (Just (Authority Nothing (Host "www.example.org") Nothing))
+          "/."
+          (Query [])
+          Nothing
+  , parseTestURI strictURIParserOptions "http:/." $
+      Right $ URI
+          (Scheme "http")
+          Nothing
+          "/."
+          (Query [])
+          Nothing
+
+  -- RFC 3986, Section 4.2
+  , parseTestRelativeRef strictURIParserOptions "verysimple" $
+      Right $ RelativeRef
+          Nothing
+          "verysimple"
+          (Query [])
+          Nothing
+  , parseTestRelativeRef strictURIParserOptions "this:that/thap/sub?1=2" $
+      Left $ MalformedPath
+  , parseTestRelativeRef strictURIParserOptions "./this:that/thap/sub?1=2" $
+      Right $ RelativeRef
+          Nothing
+          "./this:that/thap/sub"
+          (Query [("1", "2")])
+          Nothing
   ]
 
 

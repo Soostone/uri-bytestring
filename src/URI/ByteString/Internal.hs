@@ -16,7 +16,7 @@ import           Data.ByteString.Builder    (Builder)
 import qualified Data.ByteString.Builder    as BB
 import           Data.Char                  (ord)
 import           Data.Ix
-import           Data.List                  (delete, intersperse, stripPrefix)
+import           Data.List                  (delete, intersperse, stripPrefix, (\\))
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Word
@@ -158,7 +158,7 @@ uriParser opts = do
 -- | Toplevel parser for relative refs
 relativeRefParser :: URIParserOptions -> URIParser RelativeRef
 relativeRefParser opts = do
-  (authority, path) <- hierPartParser
+  (authority, path) <- hierPartParser <|> rrPathParser
   query <- queryParser opts
   frag  <- mFragmentParser
   case frag of
@@ -186,6 +186,14 @@ hierPartParser = authWithPathParser <|>
                  pathAbsoluteParser <|>
                  pathRootlessParser <|>
                  pathEmptyParser
+
+
+-------------------------------------------------------------------------------
+-- | Relative references have awkward corner cases.  See
+-- 'firstRelRefSegmentParser'.
+rrPathParser :: URIParser (Maybe Authority, ByteString)
+rrPathParser = (Nothing,) <$>
+    ((<>) <$> firstRelRefSegmentParser <*> pathParser)
 
 
 -------------------------------------------------------------------------------
@@ -351,6 +359,14 @@ pathParser' :: (Parser ByteString -> Parser [ByteString]) -> URIParser ByteStrin
 pathParser' repeatParser = (mconcat <$> repeatParser segmentParser) `orFailWith` MalformedPath
   where
     segmentParser = mconcat <$> sequence [string "/", A.takeWhile (inClass pchar)]
+
+
+-------------------------------------------------------------------------------
+-- | Parses the first segment of a path section of a relative-path
+-- reference.  See RFC 3986, Section 4.2.
+-- firstRelRefSegmentParser :: URIParser ByteString
+firstRelRefSegmentParser :: URIParser ByteString
+firstRelRefSegmentParser = A.takeWhile (inClass (pchar \\ ":")) `orFailWith` MalformedPath
 
 
 -------------------------------------------------------------------------------
