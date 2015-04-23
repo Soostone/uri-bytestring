@@ -47,7 +47,7 @@ data UserInfo = UserInfo {
 
 -------------------------------------------------------------------------------
 newtype Query = Query { queryPairs :: [(ByteString, ByteString)] }
-              deriving (Show, Eq, Monoid)
+              deriving (Show, Eq, Monoid, Generic, Typeable)
 
 
 -------------------------------------------------------------------------------
