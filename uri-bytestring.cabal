@@ -15,6 +15,7 @@ homepage:            https://github.com/Soostone/uri-bytestring
 bug-reports:         https://github.com/Soostone/uri-bytestring/issues
 extra-source-files:
   README.md
+  CONTRIBUTING.md
   changelog.md
   bench/*.hs
 
