@@ -38,6 +38,13 @@ instance Arbitrary URI where
                   <*> arbitrary
 
 
+instance Arbitrary RelativeRef where
+  arbitrary = RelativeRef <$> arbitrary
+                          <*> arbitrary
+                          <*> arbitrary
+                          <*> arbitrary
+
+
 instance Arbitrary Scheme where
   arbitrary = Scheme <$> arbitrary
 

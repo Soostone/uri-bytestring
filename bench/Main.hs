@@ -16,6 +16,7 @@ import           URI.ByteString
 instance NFData Authority
 instance NFData UserInfo
 instance NFData URI
+instance NFData RelativeRef
 instance NFData NU.URI
 instance NFData SchemaError
 instance NFData URIParseError
@@ -30,16 +31,23 @@ main = defaultMain
         bench "Network.URI.parseURI" $ nf NU.parseURI exampleURIS
       , bench "URI.ByteString.parseURI strict" $ nf (parseURI strictURIParserOptions) exampleURIS
       , bench "URI.ByteString.parseURI lax" $ nf (parseURI laxURIParserOptions) exampleURIS
+      , bench "URI.ByteString.parseRelativeRef strict" $ nf (parseRelativeRef strictURIParserOptions) exampleRelativeRefS
+      , bench "URI.ByteString.parseRelativeRef lax" $ nf (parseRelativeRef laxURIParserOptions) exampleRelativeRefS
       ]
   , bgroup "serializing"
     [
       bench "URI.ByteString.serializeURI" $ nf (toLazyByteString . serializeURI) exampleURI
+    , bench "URI.ByteString.serializeRelativeRef" $ nf (toLazyByteString . serializeRelativeRef) exampleRelativeRef
     ]
   ]
 
 
 exampleURIS :: IsString s => s
 exampleURIS = "http://google.com/example?params=youbetcha"
+
+
+exampleRelativeRefS :: IsString s => s
+exampleRelativeRefS = "/example?params=youbetcha#17u"
 
 
 exampleURI :: URI
@@ -53,4 +61,17 @@ exampleURI = URI {
     , uriPath = "/example"
     , uriQuery = Query [("params", "youbetcha")]
     , uriFragment = Nothing
+    }
+
+
+exampleRelativeRef :: RelativeRef
+exampleRelativeRef = RelativeRef {
+      rrAuthority = Just Authority {
+          authorityUserInfo = Nothing
+        , authorityHost = Host "google.com"
+        , authorityPort = Nothing
+        }
+    , rrPath = "/example"
+    , rrQuery = Query [("params", "youbetcha")]
+    , rrFragment = Nothing
     }

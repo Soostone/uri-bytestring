@@ -16,7 +16,7 @@ import           Data.ByteString.Builder    (Builder)
 import qualified Data.ByteString.Builder    as BB
 import           Data.Char                  (ord)
 import           Data.Ix
-import           Data.List                  (delete, intersperse, stripPrefix)
+import           Data.List                  (delete, intersperse, stripPrefix, (\\))
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Word
@@ -57,17 +57,20 @@ laxURIParserOptions = URIParserOptions {
 -- "http://www.example.org/foo?bar=baz#quux"
 serializeURI :: URI -> Builder
 serializeURI URI {..} = scheme <> BB.string8 "://" <>
-                        authority <>
-                        path <>
-                        query <>
-                        fragment
+                        serializeRelativeRef rr
+  where
+    scheme = bs $ schemeBS uriScheme
+    rr = RelativeRef uriAuthority uriPath uriQuery uriFragment
+
+-- | Like 'serializeURI', but do not render scheme.
+serializeRelativeRef :: RelativeRef -> Builder
+serializeRelativeRef RelativeRef {..} = authority <> path <> query <> fragment
   where
     path = mconcat $ intersperse (c8 '/') $ map urlEncodePath segs
-    segs = BS.split slash uriPath
-    scheme = bs $ schemeBS uriScheme
-    authority = maybe mempty serializeAuthority uriAuthority
-    query = serializeQuery uriQuery
-    fragment = maybe mempty (\s -> c8 '#' <> bs s) uriFragment
+    segs = BS.split slash rrPath
+    authority = maybe mempty serializeAuthority rrAuthority
+    query = serializeQuery rrQuery
+    fragment = maybe mempty (\s -> c8 '#' <> bs s) rrFragment
 
 
 -------------------------------------------------------------------------------
@@ -131,6 +134,10 @@ c8 = BB.char8
 parseURI :: URIParserOptions -> ByteString -> Either URIParseError URI
 parseURI opts = parseOnly' OtherError (uriParser opts)
 
+-- | Like 'parseURI', but do not parse scheme.
+parseRelativeRef :: URIParserOptions -> ByteString -> Either URIParseError RelativeRef
+parseRelativeRef opts = parseOnly' OtherError (relativeRefParser opts)
+
 
 -------------------------------------------------------------------------------
 -- | Convenience alias for a parser that can return URIParseError
@@ -143,14 +150,21 @@ uriParser :: URIParserOptions -> URIParser URI
 uriParser opts = do
   scheme <- schemeParser
   void $ word8 colon `orFailWith` MalformedScheme MissingColon
+  RelativeRef authority path query fragment <- relativeRefParser opts
+  return $ URI scheme authority path query fragment
 
-  (authority, path) <- hierPartParser
+
+-------------------------------------------------------------------------------
+-- | Toplevel parser for relative refs
+relativeRefParser :: URIParserOptions -> URIParser RelativeRef
+relativeRefParser opts = do
+  (authority, path) <- hierPartParser <|> rrPathParser
   query <- queryParser opts
   frag  <- mFragmentParser
   case frag of
     Just _ -> endOfInput `orFailWith` MalformedFragment
     Nothing -> endOfInput `orFailWith` MalformedQuery
-  return $ URI scheme authority path query frag
+  return $ RelativeRef authority path query frag
 
 
 -------------------------------------------------------------------------------
@@ -172,6 +186,14 @@ hierPartParser = authWithPathParser <|>
                  pathAbsoluteParser <|>
                  pathRootlessParser <|>
                  pathEmptyParser
+
+
+-------------------------------------------------------------------------------
+-- | Relative references have awkward corner cases.  See
+-- 'firstRelRefSegmentParser'.
+rrPathParser :: URIParser (Maybe Authority, ByteString)
+rrPathParser = (Nothing,) <$>
+    ((<>) <$> firstRelRefSegmentParser <*> pathParser)
 
 
 -------------------------------------------------------------------------------
@@ -337,6 +359,14 @@ pathParser' :: (Parser ByteString -> Parser [ByteString]) -> URIParser ByteStrin
 pathParser' repeatParser = (mconcat <$> repeatParser segmentParser) `orFailWith` MalformedPath
   where
     segmentParser = mconcat <$> sequence [string "/", A.takeWhile (inClass pchar)]
+
+
+-------------------------------------------------------------------------------
+-- | Parses the first segment of a path section of a relative-path
+-- reference.  See RFC 3986, Section 4.2.
+-- firstRelRefSegmentParser :: URIParser ByteString
+firstRelRefSegmentParser :: URIParser ByteString
+firstRelRefSegmentParser = A.takeWhile (inClass (pchar \\ ":")) `orFailWith` MalformedPath
 
 
 -------------------------------------------------------------------------------
