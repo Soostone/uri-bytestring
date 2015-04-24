@@ -1,15 +1,11 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
 module URI.ByteStringTests (tests) where
 
 -------------------------------------------------------------------------------
 import           Control.Lens
-import           Data.ByteString          (ByteString, breakByte, tail)
-import           Data.ByteString.Char8    (unpack)
-import           Data.Char                (ord)
-import           Data.Derive.Arbitrary    (makeArbitrary)
-import           Data.DeriveTH            (derive)
+import           Data.ByteString          (ByteString)
+import qualified Data.ByteString.Char8    as B8
 import           Data.Monoid
 import           Test.Tasty
 import           Test.Tasty.HUnit
@@ -18,10 +14,6 @@ import           Test.Tasty.QuickCheck
 import           URI.ByteString
 import           URI.ByteString.Arbitrary ()
 -------------------------------------------------------------------------------
-
-
-$(derive makeArbitrary ''SchemaError)
-$(derive makeArbitrary ''URIParseError)
 
 tests :: TestTree
 tests = testGroup "URI.Bytestring"
@@ -222,9 +214,9 @@ testParseHost uri expectedHost =
         Nothing
 
 
-
 testParsesLax :: ByteString -> URI -> TestTree
 testParsesLax = testParses' laxURIParserOptions
+
 
 testParses' :: URIParserOptions -> ByteString -> URI -> TestTree
 testParses' opts s u = testGroup "testParses'"
@@ -232,17 +224,33 @@ testParses' opts s u = testGroup "testParses'"
     , parseTestRelativeRef opts (makeRelativeRefBS s) $ Right (makeRelativeRefTyped u)
     ]
 
+
 makeRelativeRefTyped :: URI -> RelativeRef
-makeRelativeRefTyped u = case u of (URI _ a p q f) -> (RelativeRef a p q f)
+makeRelativeRefTyped (URI _ a p q f) = RelativeRef a p q f
+
 
 makeRelativeRefBS :: ByteString -> ByteString
-makeRelativeRefBS s = case breakByte (fromIntegral $ ord ':') s of (_, x) -> Data.ByteString.tail x
+makeRelativeRefBS s = B8.tail x
+  where
+    (_, x) = B8.break (==':') s
+
 
 testParseFailure :: ByteString -> URIParseError -> TestTree
 testParseFailure s = parseTestURI strictURIParserOptions s . Left
 
-parseTestURI :: URIParserOptions -> ByteString -> Either URIParseError URI -> TestTree
-parseTestURI opts s r = testCase (unpack s) $ parseURI opts s @?= r
 
-parseTestRelativeRef :: URIParserOptions -> ByteString -> Either URIParseError RelativeRef -> TestTree
-parseTestRelativeRef opts s r = testCase (unpack s) $ parseRelativeRef opts s @?= r
+parseTestURI
+    :: URIParserOptions
+    -> ByteString
+    -> Either URIParseError URI
+    -> TestTree
+parseTestURI opts s r = testCase (B8.unpack s) $ parseURI opts s @?= r
+
+
+parseTestRelativeRef
+    :: URIParserOptions
+    -> ByteString
+    -> Either URIParseError RelativeRef
+    -> TestTree
+parseTestRelativeRef opts s r =
+  testCase (B8.unpack s) $ parseRelativeRef opts s @?= r

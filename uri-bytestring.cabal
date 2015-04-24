@@ -63,6 +63,12 @@ test-suite test
     , quickcheck-instances
   default-language:    Haskell2010
 
+  if flag(lib-Werror)
+    ghc-options: -Werror
+
+  ghc-options: -Wall
+
+
 benchmark bench
   type: exitcode-stdio-1.0
   main-is: Main.hs

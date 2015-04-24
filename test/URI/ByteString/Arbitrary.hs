@@ -1,11 +1,14 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module URI.ByteString.Arbitrary where
 
 
 -------------------------------------------------------------------------------
 import           Control.Applicative
+import           Data.Derive.Arbitrary     (makeArbitrary)
+import           Data.DeriveTH             (derive)
 import           Test.QuickCheck
-import           Test.QuickCheck.Instances
+import           Test.QuickCheck.Instances ()
 -------------------------------------------------------------------------------
 import           URI.ByteString
 -------------------------------------------------------------------------------
@@ -55,3 +58,7 @@ instance Arbitrary Query where
 
 instance Arbitrary URIParserOptions where
   arbitrary = URIParserOptions <$> arbitrary
+
+
+$(derive makeArbitrary ''SchemaError)
+$(derive makeArbitrary ''URIParseError)

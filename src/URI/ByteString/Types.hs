@@ -71,14 +71,12 @@ data RelativeRef = RelativeRef {
     } deriving (Show, Eq, Generic, Typeable)
 
 
-
 -------------------------------------------------------------------------------
 -- | Options for the parser. You will probably want to use either
 -- "strictURIParserOptions" or "laxURIParserOptions"
 data URIParserOptions = URIParserOptions {
       upoValidQueryChar :: Word8 -> Bool
     }
-
 
 
 -------------------------------------------------------------------------------
