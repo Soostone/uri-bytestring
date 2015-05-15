@@ -5,7 +5,7 @@ module Main (main) where
 -------------------------------------------------------------------------------
 import           Control.DeepSeq.Generics
 import           Criterion.Main
-import           Data.ByteString.Builder
+import           Blaze.ByteString.Builder
 import           Data.String
 import qualified Network.URI              as NU
 -------------------------------------------------------------------------------
@@ -17,7 +17,6 @@ instance NFData Authority
 instance NFData UserInfo
 instance NFData URI
 instance NFData RelativeRef
-instance NFData NU.URI
 instance NFData SchemaError
 instance NFData URIParseError
 

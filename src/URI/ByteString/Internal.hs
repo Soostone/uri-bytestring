@@ -5,22 +5,24 @@
 module URI.ByteString.Internal where
 
 -------------------------------------------------------------------------------
+import           Blaze.ByteString.Builder           (Builder)
+import qualified Blaze.ByteString.Builder           as BB
+import qualified Blaze.ByteString.Builder.Char.Utf8 as BB
 import           Control.Applicative
 import           Control.Monad
 import           Data.Attoparsec.ByteString
-import qualified Data.Attoparsec.ByteString as A
+import qualified Data.Attoparsec.ByteString         as A
 import           Data.Bits
-import           Data.ByteString            (ByteString)
-import qualified Data.ByteString            as BS
-import           Data.ByteString.Builder    (Builder)
-import qualified Data.ByteString.Builder    as BB
-import           Data.Char                  (ord)
+import           Data.ByteString                    (ByteString)
+import qualified Data.ByteString                    as BS
+import           Data.Char                          (ord)
 import           Data.Ix
-import           Data.List                  (delete, intersperse, stripPrefix, (\\))
+import           Data.List                          (delete, intersperse,
+                                                     stripPrefix, (\\))
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Word
-import           Text.Read                  (readMaybe)
+import           Text.Read                          (readMaybe)
 -------------------------------------------------------------------------------
 import           URI.ByteString.Types
 -------------------------------------------------------------------------------
@@ -56,7 +58,7 @@ laxURIParserOptions = URIParserOptions {
 -- >>> BB.toLazyByteString $ serializeURI $ URI {uriScheme = Scheme {schemeBS = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {hostBS = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {queryPairs = [("bar","baz")]}, uriFragment = Just "quux"}
 -- "http://www.example.org/foo?bar=baz#quux"
 serializeURI :: URI -> Builder
-serializeURI URI {..} = scheme <> BB.string8 "://" <>
+serializeURI URI {..} = scheme <> BB.fromString "://" <>
                         serializeRelativeRef rr
   where
     scheme = bs $ schemeBS uriScheme
@@ -89,7 +91,7 @@ serializeAuthority Authority {..} = userinfo <> bs host <> port
     userinfo = maybe mempty serializeUserInfo authorityUserInfo
     host = hostBS authorityHost
     port = maybe mempty packPort authorityPort
-    packPort (Port p) = c8 ':' <> BB.string8 (show p)
+    packPort (Port p) = c8 ':' <> BB.fromString (show p)
 
 
 -------------------------------------------------------------------------------
@@ -99,12 +101,12 @@ serializeUserInfo UserInfo {..} = bs uiUsername <> c8 ':' <> bs uiPassword
 
 -------------------------------------------------------------------------------
 bs :: ByteString -> Builder
-bs = BB.byteString
+bs = BB.fromByteString
 
 
 -------------------------------------------------------------------------------
 c8 :: Char -> Builder
-c8 = BB.char8
+c8 = BB.fromChar
 
 
 -------------------------------------------------------------------------------
@@ -720,7 +722,7 @@ urlDecode replacePlus z = fst $ BS.unfoldrN (BS.length z) go z
 urlEncode' :: [Word8] -> ByteString -> Builder
 urlEncode' extraUnreserved = mconcat . map encodeChar . BS.unpack
     where
-      encodeChar ch | unreserved' ch = BB.word8 ch
+      encodeChar ch | unreserved' ch = BB.fromWord8 ch
                     | otherwise     = h2 ch
 
       unreserved' ch | ch >= 65 && ch <= 90  = True -- A-Z

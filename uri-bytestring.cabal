@@ -35,7 +35,8 @@ library
 
       attoparsec       >= 0.10    && < 0.13
     , base             >= 4.6     && < 4.8
-    , bytestring       >= 0.10.2.0 && < 0.11
+    , bytestring       >= 0.9.1   && < 0.11
+    , blaze-builder    >= 0.4.0.0 && < 0.5
 
   hs-source-dirs:      src
   default-language:    Haskell2010
@@ -83,6 +84,7 @@ benchmark bench
     , deepseq-generics
     , network-uri
     , bytestring
+    , blaze-builder
 
 source-repository head
   type:     git
