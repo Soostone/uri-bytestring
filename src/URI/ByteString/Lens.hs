@@ -1,9 +1,12 @@
+{-# LANGUAGE CPP        #-}
 {-# LANGUAGE RankNTypes #-}
 module URI.ByteString.Lens where
 
 
 -------------------------------------------------------------------------------
+#if !MIN_VERSION_base(4,8,0)
 import           Control.Applicative
+#endif
 import           Data.ByteString      (ByteString)
 import           Data.Word
 -------------------------------------------------------------------------------
@@ -226,7 +229,7 @@ upoValidQueryCharL =
 -------------------------------------------------------------------------------
 -- Lens machinery
 -------------------------------------------------------------------------------
-type Lens s t a b = Functor f => (a -> f b) -> s -> f t
+type Lens s t a b = forall f. Functor f => (a -> f b) -> s -> f t
 
 -------------------------------------------------------------------------------
 lens :: (s -> a) -> (s -> b -> t) -> Lens s t a b

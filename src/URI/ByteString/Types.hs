@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -5,7 +6,9 @@ module URI.ByteString.Types where
 
 -------------------------------------------------------------------------------
 import           Data.ByteString (ByteString)
+#if !MIN_VERSION_base(4,8,0)
 import           Data.Monoid
+#endif
 import           Data.Typeable
 import           Data.Word
 import           GHC.Generics
