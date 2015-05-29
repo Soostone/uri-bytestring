@@ -33,6 +33,7 @@ before_install:
       $CABAL install --constraint=transformers\ installed happy alex
       export PATH=$HOME/.cabal/bin:$PATH
     fi
+  - $CABAL install doctest
 
 install:
   - $CABAL install --dependencies-only --enable-tests --enable-benchmarks
