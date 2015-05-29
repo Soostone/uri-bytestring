@@ -1,4 +1,4 @@
 doctest:
-	doctest -isrc -XOverloadedStrings src/URI/ByteString.hs
+	doctest -XOverloadedStrings -isrc -idist/build/autogen/ -optP-include -optPdist/build/autogen/cabal_macros.h src/URI/ByteString.hs
 
 .PHONY: doctest
