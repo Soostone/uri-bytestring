@@ -14,6 +14,7 @@ import           URI.ByteString
 
 -------------------------------------------------------------------------------
 instance NFData Authority
+instance NFData Host
 instance NFData UserInfo
 instance NFData URI
 instance NFData RelativeRef
