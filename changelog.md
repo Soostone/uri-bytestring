@@ -1,3 +1,9 @@
+0.1.2
+* Add support for GHC 7.10
+
+0.1.1
+* Switch to blaze-bytestring for less contentious dependencies
+
 0.1
 * Add generic lenses (breaking field name changes).
 * Add support for relative refs.
