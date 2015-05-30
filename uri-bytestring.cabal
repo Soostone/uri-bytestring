@@ -82,7 +82,7 @@ benchmark bench
     , criterion
     , deepseq
     , deepseq-generics
-    , network-uri
+    , network-uri >= 2.6.0.3
     , bytestring
     , blaze-builder
 

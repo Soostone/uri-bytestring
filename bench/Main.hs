@@ -16,7 +16,6 @@ import           URI.ByteString
 instance NFData Authority
 instance NFData UserInfo
 instance NFData URI
-instance NFData NU.URI
 instance NFData RelativeRef
 instance NFData SchemaError
 instance NFData URIParseError
