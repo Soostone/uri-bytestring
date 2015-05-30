@@ -10,3 +10,4 @@ Haskell URI parsing as ByteStrings
 * [Doug Beardsley](http://github.com/mightybyte)
 * [Ozgun Ataman](http://github.com/ozataman)
 * [fisx](http://github.com/fisx)
+* [Timo von Holtz](http://github.com/tvh)
