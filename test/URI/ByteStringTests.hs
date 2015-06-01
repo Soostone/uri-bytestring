@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module URI.ByteStringTests (tests) where
@@ -7,12 +6,12 @@ module URI.ByteStringTests (tests) where
 import           Control.Lens
 import           Data.ByteString          (ByteString)
 import qualified Data.ByteString.Char8    as B8
-#if !MIN_VERSION_base(4,8,0)
 import           Data.Monoid
-#endif
 import           Test.Tasty
 import           Test.Tasty.HUnit
 import           Test.Tasty.QuickCheck
+-------------------------------------------------------------------------------
+import           Prelude
 -------------------------------------------------------------------------------
 import           URI.ByteString
 import           URI.ByteString.Arbitrary ()

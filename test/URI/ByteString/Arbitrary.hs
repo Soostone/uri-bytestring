@@ -1,17 +1,16 @@
-{-# LANGUAGE CPP             #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module URI.ByteString.Arbitrary where
 
 
 -------------------------------------------------------------------------------
-#if !MIN_VERSION_base(4,8,0)
 import           Control.Applicative
-#endif
 import           Data.Derive.Arbitrary     (makeArbitrary)
 import           Data.DeriveTH             (derive)
 import           Test.QuickCheck
 import           Test.QuickCheck.Instances ()
+-------------------------------------------------------------------------------
+import           Prelude
 -------------------------------------------------------------------------------
 import           URI.ByteString
 -------------------------------------------------------------------------------

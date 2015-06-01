@@ -1,14 +1,13 @@
-{-# LANGUAGE CPP        #-}
 {-# LANGUAGE RankNTypes #-}
 module URI.ByteString.Lens where
 
 
 -------------------------------------------------------------------------------
-#if !MIN_VERSION_base(4,8,0)
 import           Control.Applicative
-#endif
 import           Data.ByteString      (ByteString)
 import           Data.Word
+-------------------------------------------------------------------------------
+import           Prelude
 -------------------------------------------------------------------------------
 import           URI.ByteString.Types
 -------------------------------------------------------------------------------
