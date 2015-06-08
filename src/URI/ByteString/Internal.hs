@@ -58,7 +58,7 @@ laxURIParserOptions = URIParserOptions {
 -- >>> BB.toLazyByteString $ serializeURI $ URI {uriScheme = Scheme {schemeBS = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {hostBS = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {queryPairs = [("bar","baz")]}, uriFragment = Just "quux"}
 -- "http://www.example.org/foo?bar=baz#quux"
 serializeURI :: URI -> Builder
-serializeURI URI {..} = scheme <> BB.fromString "://" <>
+serializeURI URI {..} = scheme <> BB.fromString ":" <>
                         serializeRelativeRef rr
   where
     scheme = bs $ schemeBS uriScheme
@@ -86,7 +86,7 @@ serializeQuery (Query ps) =
 
 -------------------------------------------------------------------------------
 serializeAuthority :: Authority -> Builder
-serializeAuthority Authority {..} = userinfo <> bs host <> port
+serializeAuthority Authority {..} = BB.fromString "//" <> userinfo <> bs host <> port
   where
     userinfo = maybe mempty serializeUserInfo authorityUserInfo
     host = hostBS authorityHost
