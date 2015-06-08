@@ -112,12 +112,10 @@ parseUriTests = testGroup "parseUri"
 
   , roundtripTestURI strictURIParserOptions "ftp://ftp.is.co.za/rfc/rfc1808.txt"
   , roundtripTestURI strictURIParserOptions "http://www.ietf.org/rfc/rfc2396.txt"
-  , roundtripTestURI strictURIParserOptions "ldap://[2001:db8::7]/c=GB?objectClass?one"
   , roundtripTestURI strictURIParserOptions "mailto:John.Doe@example.com"
   , roundtripTestURI strictURIParserOptions "news:comp.infosystems.www.servers.unix"
   , roundtripTestURI strictURIParserOptions "tel:+1-816-555-1212"
   , roundtripTestURI strictURIParserOptions "telnet://192.0.2.16:80/"
-  , roundtripTestURI strictURIParserOptions "urn:oasis:names:specification:docbook:dtd:xml:4.1.2"
 
   -- RFC 3986, Section 4.2
   , parseTestRelativeRef strictURIParserOptions "verysimple" $
