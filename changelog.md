@@ -1,6 +1,8 @@
+0.1.4
+* Bump attoparsec bounds
+
 0.1.3
 * Include test modules in distribution
-
 
 0.1.2
 * Add support for GHC 7.10
