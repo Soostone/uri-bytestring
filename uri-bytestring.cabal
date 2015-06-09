@@ -63,6 +63,7 @@ test-suite test
     , derive
     , attoparsec
     , base
+    , blaze-builder
     , bytestring
     , lens
     , quickcheck-instances
