@@ -1,3 +1,7 @@
+0.1.3
+* Include test modules in distribution
+
+
 0.1.2
 * Add support for GHC 7.10
 
