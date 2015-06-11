@@ -96,6 +96,14 @@ parseUriTests = testGroup "parseUri"
           (Query [("listParam[]", "foo,bar")])
           Nothing
 
+  , testParses "https://www.example.org#only-fragment" $
+      URI (Scheme "https")
+          (Just (Authority Nothing (Host "www.example.org") Nothing))
+          ""
+          (Query [])
+          (Just "only-fragment")
+
+
   , parseTestURI strictURIParserOptions "http://www.example.org/." $
       Right $ URI
           (Scheme "http")
