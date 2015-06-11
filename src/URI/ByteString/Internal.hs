@@ -96,7 +96,7 @@ serializeAuthority Authority {..} = BB.fromString "//" <> userinfo <> bs host <>
 
 -------------------------------------------------------------------------------
 serializeUserInfo :: UserInfo -> Builder
-serializeUserInfo UserInfo {..} = bs uiUsername <> c8 ':' <> bs uiPassword
+serializeUserInfo UserInfo {..} = bs uiUsername <> c8 ':' <> bs uiPassword <> c8 '@'
 
 
 -------------------------------------------------------------------------------

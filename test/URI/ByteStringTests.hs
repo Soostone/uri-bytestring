@@ -24,6 +24,7 @@ tests = testGroup "URI.Bytestring"
     parseUriTests
   , uriParseErrorInstancesTests
   , lensTests
+  , serializeURITests
   ]
 
 
@@ -143,6 +144,8 @@ uriParseErrorInstancesTests = testGroup "URIParseError instances"
       read (show e) == e
   ]
 
+
+-------------------------------------------------------------------------------
 lensTests :: TestTree
 lensTests = testGroup "lenses"
   [
@@ -210,10 +213,13 @@ lensTests = testGroup "lenses"
      ((rr & rrFragmentL .~ x) === rr { rrFragment = x })
   ]
 
+
+-------------------------------------------------------------------------------
 testParses :: ByteString -> URI -> TestTree
 testParses = testParses' strictURIParserOptions
 
 
+-------------------------------------------------------------------------------
 testParseHost :: ByteString -> ByteString -> TestTree
 testParseHost uri expectedHost =
   testParses uri $
@@ -224,10 +230,13 @@ testParseHost uri expectedHost =
         Nothing
 
 
+
+-------------------------------------------------------------------------------
 testParsesLax :: ByteString -> URI -> TestTree
 testParsesLax = testParses' laxURIParserOptions
 
 
+-------------------------------------------------------------------------------
 testParses' :: URIParserOptions -> ByteString -> URI -> TestTree
 testParses' opts s u = testGroup "testParses'"
     [ parseTestURI opts s $ Right u
@@ -235,20 +244,24 @@ testParses' opts s u = testGroup "testParses'"
     ]
 
 
+-------------------------------------------------------------------------------
 makeRelativeRefTyped :: URI -> RelativeRef
 makeRelativeRefTyped (URI _ a p q f) = RelativeRef a p q f
 
 
+-------------------------------------------------------------------------------
 makeRelativeRefBS :: ByteString -> ByteString
 makeRelativeRefBS s = B8.tail x
   where
     (_, x) = B8.break (==':') s
 
 
+-------------------------------------------------------------------------------
 testParseFailure :: ByteString -> URIParseError -> TestTree
 testParseFailure s = parseTestURI strictURIParserOptions s . Left
 
 
+-------------------------------------------------------------------------------
 parseTestURI
     :: URIParserOptions
     -> ByteString
@@ -256,6 +269,8 @@ parseTestURI
     -> TestTree
 parseTestURI opts s r = testCase (B8.unpack s) $ parseURI opts s @?= r
 
+
+-------------------------------------------------------------------------------
 roundtripTestURI
     :: URIParserOptions
     -> ByteString
@@ -263,6 +278,8 @@ roundtripTestURI
 roundtripTestURI opts s =
     testCase (B8.unpack s) $ (parseURI opts s >>= return . BB.toByteString . serializeURI) @?= Right s
 
+
+-------------------------------------------------------------------------------
 parseTestRelativeRef
     :: URIParserOptions
     -> ByteString
@@ -270,3 +287,19 @@ parseTestRelativeRef
     -> TestTree
 parseTestRelativeRef opts s r =
   testCase (B8.unpack s) $ parseRelativeRef opts s @?= r
+
+
+-------------------------------------------------------------------------------
+serializeURITests :: TestTree
+serializeURITests = testGroup "serializeURI"
+  [
+    testCase "renders userinfo correctly" $ do
+       let ui = UserInfo "user" "pass"
+       let uri = URI (Scheme "http")
+                 (Just (Authority (Just ui) (Host "www.example.org") Nothing))
+                 "/"
+                 (Query [("foo", "bar")])
+                 (Just "somefragment")
+       let res = BB.toLazyByteString (serializeURI uri)
+       res @?= "http://user:pass@www.example.org/?foo=bar#somefragment"
+  ]
