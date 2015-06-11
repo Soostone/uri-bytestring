@@ -1,3 +1,6 @@
+0.1.5
+* Fix serialization bug where userinfo was not including the @ separator.
+
 0.1.4
 * Bump attoparsec bounds
 
