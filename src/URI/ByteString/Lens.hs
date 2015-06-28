@@ -102,20 +102,6 @@ uiPasswordL =
 
 -------------------------------------------------------------------------------
 -- | @
--- queryPairsL :: Lens' 'Query' [('ByteString', 'ByteString')]
--- @
-queryPairsL
-  :: Functor f
-  => ([(ByteString, ByteString)] -> f [(ByteString, ByteString)])
-  -> Query
-  -> f Query
-queryPairsL =
-  lens queryPairs (\a b -> a { queryPairs = b})
-{-# INLINE queryPairsL #-}
-
-
--------------------------------------------------------------------------------
--- | @
 -- uriSchemeL :: Lens' 'URI' 'Scheme'
 -- @
 uriSchemeL :: Functor f => (Scheme -> f Scheme) -> URI -> f URI
@@ -138,23 +124,22 @@ uriAuthorityL =
 
 -------------------------------------------------------------------------------
 -- | @
--- uriPathL :: Lens' 'URI' 'ByteString'
+-- uriPathL :: IsPathSegment a => Lens' 'URI' [a]
 -- @
 uriPathL
-  :: Functor f => (ByteString -> f ByteString) -> URI -> f URI
-uriPathL =
-  lens uriPath (\a b -> a { uriPath = b})
+  :: (Functor f, IsPathSegment a) => ([a] -> f [a]) -> URI -> f URI
+uriPathL = undefined
 {-# INLINE uriPathL #-}
 
 
 -------------------------------------------------------------------------------
 -- | @
--- uriQueryL :: Lens' 'URI' 'Query'
+-- uriQueryL :: IsQueryPair a => Lens' 'URI''[a]
 -- @
-uriQueryL :: Functor f => (Query -> f Query) -> URI -> f URI
-uriQueryL =
-  lens uriQuery (\a b -> a { uriQuery = b})
+uriQueryL :: (Functor f, IsQueryPair a) => ([a] -> f [a]) -> URI -> f URI
+uriQueryL = undefined
 {-# INLINE uriQueryL #-}
+
 
 -------------------------------------------------------------------------------
 -- | @
@@ -182,23 +167,22 @@ rrAuthorityL =
 
 -------------------------------------------------------------------------------
 -- | @
--- rrPathL :: Lens' 'RelativeRef' 'ByteString'
+-- rrPathL :: IsPathSegment a => Lens' 'RelativeRef' [a]
 -- @
 rrPathL
-  :: Functor f => (ByteString -> f ByteString) -> RelativeRef -> f RelativeRef
-rrPathL =
-  lens rrPath (\a b -> a { rrPath = b})
+  :: (Functor f, IsPathSegment a) => ([a] -> f [a]) -> RelativeRef -> f RelativeRef
+rrPathL = undefined
 {-# INLINE rrPathL #-}
 
 
 -------------------------------------------------------------------------------
 -- | @
--- rrQueryL :: Lens' 'RelativeRef' 'Query'
+-- rrQueryL :: IsQueryPair a => Lens' 'RelativeRef' [a]
 -- @
-rrQueryL :: Functor f => (Query -> f Query) -> RelativeRef -> f RelativeRef
-rrQueryL =
-  lens rrQuery (\a b -> a { rrQuery = b})
+rrQueryL :: (Functor f, IsQueryPair a) => ([a] -> f [a]) -> RelativeRef -> f RelativeRef
+rrQueryL = undefined
 {-# INLINE rrQueryL #-}
+
 
 -------------------------------------------------------------------------------
 -- | @
