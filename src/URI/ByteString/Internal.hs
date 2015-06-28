@@ -62,26 +62,25 @@ serializeURI URI {..} = scheme <> BB.fromString ":" <>
                         serializeRelativeRef rr
   where
     scheme = bs $ schemeBS uriScheme
-    rr = RelativeRef uriAuthority uriPath uriQuery uriFragment
+    rr = RelativeRef uriAuthority undefined uriQuery uriFragment
 
 -- | Like 'serializeURI', but do not render scheme.
 serializeRelativeRef :: RelativeRef -> Builder
 serializeRelativeRef RelativeRef {..} = authority <> path <> query <> fragment
   where
     path = mconcat $ intersperse (c8 '/') $ map urlEncodePath segs
-    segs = BS.split slash rrPath
+    segs = BS.split slash undefined
     authority = maybe mempty serializeAuthority rrAuthority
-    query = serializeQuery rrQuery
+    query = undefined
     fragment = maybe mempty (\s -> c8 '#' <> bs s) rrFragment
 
+-- | Serialize a query into a ByteString.  Use this to store a query in a URI.
+serializeQuery :: IsQueryPair a => [a] -> Builder
+serializeQuery = undefined
 
--------------------------------------------------------------------------------
-serializeQuery :: Query -> Builder
-serializeQuery (Query []) = mempty
-serializeQuery (Query ps) =
-    c8 '?' <> mconcat (intersperse (c8 '&') (map serializePair ps))
-  where
-    serializePair (k, v) = urlEncodeQuery k <> c8 '=' <> urlEncodeQuery v
+-- | Serialize a matrix query into a ByteString.  Use this to store a query in a Path segment.
+serializeMatrixQuery :: IsQueryPair a => [a] -> Builder
+serializeMatrixQuery = undefined
 
 
 -------------------------------------------------------------------------------
@@ -140,6 +139,12 @@ parseURI opts = parseOnly' OtherError (uriParser opts)
 parseRelativeRef :: URIParserOptions -> ByteString -> Either URIParseError RelativeRef
 parseRelativeRef opts = parseOnly' OtherError (relativeRefParser opts)
 
+parseQuery :: IsQueryPair a => ByteString -> either URIParseError [a]
+parseQuery = undefined
+
+parseMatrixQuery :: IsQueryPair a => ByteString -> either URIParseError [a]
+parseMatrixQuery = undefined
+
 
 -------------------------------------------------------------------------------
 -- | Convenience alias for a parser that can return URIParseError
@@ -159,9 +164,9 @@ uriParser opts = do
 -------------------------------------------------------------------------------
 -- | Toplevel parser for relative refs
 relativeRefParser :: URIParserOptions -> URIParser RelativeRef
-relativeRefParser opts = do
-  (authority, path) <- hierPartParser <|> rrPathParser
-  query <- queryParser opts
+relativeRefParser _ = do
+  (authority, path) <- undefined
+  query <- undefined
   frag  <- mFragmentParser
   case frag of
     Just _ -> endOfInput `orFailWith` MalformedFragment
@@ -377,17 +382,8 @@ firstRelRefSegmentParser = A.takeWhile (inClass (pchar \\ ":")) `orFailWith` Mal
 -- is what most users are expecting to see. One alternative could be
 -- to just expose the query string as a string and offer functions on
 -- URI to parse a query string to a Query.
-queryParser :: URIParserOptions -> URIParser Query
-queryParser opts = do
-  mc <- peekWord8 `orFailWith` OtherError "impossible peekWord8 error"
-  case mc of
-    Just c
-      | c == question -> skip' 1 *> itemsParser
-      | c == hash     -> pure mempty
-      | otherwise     -> fail' MalformedPath
-    _      -> pure mempty
-  where
-    itemsParser = Query <$> A.sepBy' (queryItemParser opts) (word8' ampersand)
+queryParser :: IsQueryPair a => URIParserOptions -> URIParser [a]
+queryParser _ = undefined
 
 
 -------------------------------------------------------------------------------

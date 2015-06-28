@@ -5,7 +5,6 @@ module URI.ByteString.Types where
 
 -------------------------------------------------------------------------------
 import           Data.ByteString (ByteString)
-import           Data.Monoid
 import           Data.Typeable
 import           Data.Word
 import           GHC.Generics
@@ -48,16 +47,51 @@ data UserInfo = UserInfo {
 
 
 -------------------------------------------------------------------------------
-newtype Query = Query { queryPairs :: [(ByteString, ByteString)] }
-              deriving (Show, Eq, Monoid, Generic, Typeable)
+-- | To conform with the standard, 'URI' and 'RelativeRef' store the query as
+-- an unparsed 'ByteString'.  In order to process a query, you need to define
+-- your own type and instantiate this class.  For example:
+--
+-- >>> data MyQuery = FilterName ByteString | FilterAge Int | SortFlag
+-- >>> instance IsQueryPair MyQuery where
+-- >>>    toQueryPair ("name", name)                = Right $ FilterName name
+-- >>>    toQueryPair ("age",  readMay -> Just age) = Right $ FilterAge age
+-- >>>    toQueryPair ("sort", _)                   = Right $ SortFlag
+-- >>>    toQueryPair (k, v) = Left ("bad: " <> k <> ", " <> v)
+-- >>>
+-- >>>    fromQueryPair (FilterName name) = ("name", name)
+-- >>>    fromQueryPair (FilterAge age)   = ("age",  BS.pack . show $ Just age)
+-- >>>    fromQueryPair (SortFlag)        = ("sort", "")
+--
+-- See also: 'IsPathSegment'.
+class IsQueryPair a where
+    toQueryPair   :: (ByteString, ByteString) -> Either URIParseError a
+    fromQueryPair :: a -> (ByteString, ByteString)
+
+
+-------------------------------------------------------------------------------
+-- | Class for mapping bytestring path segments onto custom path segment types.
+-- To extend the example from 'IsQueryPair' with matrix query path segments:
+--
+-- >>> data MySegment = Segment ByteString | MatrixQuery MyQuery
+-- >>> instance IsPathSegment MySegment where
+-- >>>     toPathSegment s = case parseMatrixQuery s of
+-- >>>         Left _  -> Segment s
+-- >>>         Right m -> MatrixQuery m
+-- >>>
+-- >>>     fromPathSegment (Segment s) = s
+-- >>>     fromPathSegment (MatrixQuery m) =
+-- >>>         BB.toLazyByteString $ serializeMatrixQuery m
+class IsPathSegment a where
+    toPathSegment   :: ByteString -> Either URIParseError a
+    fromPathSegment :: a -> ByteString
 
 
 -------------------------------------------------------------------------------
 data URI = URI {
       uriScheme    :: Scheme
     , uriAuthority :: Maybe Authority
-    , uriPath      :: ByteString
-    , uriQuery     :: Query
+    , uriPath      :: [ByteString]
+    , uriQuery     :: ByteString
     , uriFragment  :: Maybe ByteString
     -- ^ URI fragment. Does not include the #
     } deriving (Show, Eq, Generic, Typeable)
@@ -66,8 +100,8 @@ data URI = URI {
 -------------------------------------------------------------------------------
 data RelativeRef = RelativeRef {
       rrAuthority :: Maybe Authority
-    , rrPath      :: ByteString
-    , rrQuery     :: Query
+    , rrPath      :: [ByteString]
+    , rrQuery     :: ByteString
     , rrFragment  :: Maybe ByteString
     -- ^ URI fragment. Does not include the #
     } deriving (Show, Eq, Generic, Typeable)

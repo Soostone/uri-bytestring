@@ -30,7 +30,8 @@ module URI.ByteString
     , Port(..)
     , Authority(..)
     , UserInfo(..)
-    , Query(..)
+    , IsQueryPair(..)
+    , IsPathSegment(..)
     , URI(..)
     , RelativeRef(..)
     , SchemaError(..)
@@ -58,8 +59,6 @@ module URI.ByteString
     -- ** Lenses over 'UserInfo'
     , uiUsernameL
     , uiPasswordL
-    -- ** Lenses over 'Query'
-    , queryPairsL
     -- ** Lenses over 'URI'
     , uriSchemeL
     , uriAuthorityL
