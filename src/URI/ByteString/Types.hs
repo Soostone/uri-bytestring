@@ -17,19 +17,19 @@ import           Prelude
 -- | Required first component to referring to a specification for the
 -- remainder of the URI's components, e.g. "http" or "https"
 newtype Scheme = Scheme { schemeBS :: ByteString }
-  deriving (Show, Eq, Generic, Typeable)
+  deriving (Show, Eq, Generic, Typeable, Ord)
 
 
 -------------------------------------------------------------------------------
 newtype Host = Host { hostBS :: ByteString }
-  deriving (Show, Eq, Generic, Typeable)
+  deriving (Show, Eq, Generic, Typeable, Ord)
 
 
 -------------------------------------------------------------------------------
 -- | While some libraries have chosen to limit this to a Word16, the
 -- spec only specifies that the string be comprised of digits.
 newtype Port = Port { portNumber :: Int }
-  deriving (Show, Eq, Generic, Typeable)
+  deriving (Show, Eq, Generic, Typeable, Ord)
 
 
 -------------------------------------------------------------------------------
@@ -37,19 +37,19 @@ data Authority = Authority {
       authorityUserInfo :: Maybe UserInfo
     , authorityHost     :: Host
     , authorityPort     :: Maybe Port
-    } deriving (Show, Eq, Generic, Typeable)
+    } deriving (Show, Eq, Generic, Typeable, Ord)
 
 
 -------------------------------------------------------------------------------
 data UserInfo = UserInfo {
       uiUsername :: ByteString
     , uiPassword :: ByteString
-    } deriving (Show, Eq, Generic, Typeable)
+    } deriving (Show, Eq, Generic, Typeable, Ord)
 
 
 -------------------------------------------------------------------------------
 newtype Query = Query { queryPairs :: [(ByteString, ByteString)] }
-              deriving (Show, Eq, Monoid, Generic, Typeable)
+              deriving (Show, Eq, Monoid, Generic, Typeable, Ord)
 
 
 -------------------------------------------------------------------------------
@@ -60,7 +60,7 @@ data URI = URI {
     , uriQuery     :: Query
     , uriFragment  :: Maybe ByteString
     -- ^ URI fragment. Does not include the #
-    } deriving (Show, Eq, Generic, Typeable)
+    } deriving (Show, Eq, Generic, Typeable, Ord)
 
 
 -------------------------------------------------------------------------------
