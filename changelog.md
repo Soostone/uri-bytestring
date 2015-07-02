@@ -1,3 +1,6 @@
+0.1.6
+* Add Ord instances
+
 0.1.5
 * Fix serialization bug where userinfo was not including the @ separator.
 

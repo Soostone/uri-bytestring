@@ -70,7 +70,7 @@ data RelativeRef = RelativeRef {
     , rrQuery     :: Query
     , rrFragment  :: Maybe ByteString
     -- ^ URI fragment. Does not include the #
-    } deriving (Show, Eq, Generic, Typeable)
+    } deriving (Show, Eq, Generic, Typeable, Ord)
 
 
 -------------------------------------------------------------------------------
