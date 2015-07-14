@@ -44,6 +44,12 @@ module URI.ByteString
     -- * Serializing
     , serializeURI
     , serializeRelativeRef
+    -- * Low level utility functions
+    , urlDecode
+    , urlDecodeQuery
+    , urlEncodeQuery
+    , urlEncodePath
+    , urlEncode
     -- * Lenses
     -- ** Lenses over 'Scheme'
     , schemeBSL

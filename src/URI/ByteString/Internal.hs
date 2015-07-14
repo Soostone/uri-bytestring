@@ -564,7 +564,7 @@ bsToNum s = sum $ zipWith (*) (reverse ints) [10 ^ x | x <- [0..] :: [Int]]
 
 -------------------------------------------------------------------------------
 -- | Decoding specifically for the query string, which decodes + as
--- space.
+-- space. Shorthand for @urlDecode True@
 urlDecodeQuery :: ByteString -> ByteString
 urlDecodeQuery = urlDecode plusToSpace
   where
@@ -688,10 +688,11 @@ fmapL f = either (Left . f) Right
 
 
 -------------------------------------------------------------------------------
--- | This function was extract from the @http-types@ package. The
+-- | This function was extracted from the @http-types@ package. The
 -- license can be found in licenses/http-types/LICENSE
 urlDecode
-    :: Bool -- ^ Whether to decode '+' to ' '
+    :: Bool
+    -- ^ Whether to decode '+' to ' '
     -> BS.ByteString
     -> BS.ByteString
 urlDecode replacePlus z = fst $ BS.unfoldrN (BS.length z) go z
@@ -718,9 +719,11 @@ urlDecode replacePlus z = fst $ BS.unfoldrN (BS.length z) go z
 
 -------------------------------------------------------------------------------
 --TODO: keep an eye on perf here. seems like a good use case for a DList. the word8 list could be a set/hashset
--- | Percent-encoding for URLs.
-urlEncode' :: [Word8] -> ByteString -> Builder
-urlEncode' extraUnreserved = mconcat . map encodeChar . BS.unpack
+
+-- | Percent-encoding for URLs. Specify a list of additional
+-- unreserved characters to permit.
+urlEncode :: [Word8] -> ByteString -> Builder
+urlEncode extraUnreserved = mconcat . map encodeChar . BS.unpack
     where
       encodeChar ch | unreserved' ch = BB.fromWord8 ch
                     | otherwise     = h2 ch
@@ -736,10 +739,12 @@ urlEncode' extraUnreserved = mconcat . map encodeChar . BS.unpack
 
 
 -------------------------------------------------------------------------------
+-- | Encode a ByteString for use in the query section of a URL
 urlEncodeQuery :: ByteString -> Builder
-urlEncodeQuery = urlEncode' unreserved8
+urlEncodeQuery = urlEncode unreserved8
 
 
 -------------------------------------------------------------------------------
+-- | Encode a ByteString for use in the path section of a URL
 urlEncodePath :: ByteString -> Builder
-urlEncodePath = urlEncode' unreservedPath8
+urlEncodePath = urlEncode unreservedPath8
