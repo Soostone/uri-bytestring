@@ -134,11 +134,11 @@ c8 = BB.fromChar
 -- >>> parseURI myLaxOptions "http://www.example.org/foo?bar[]=baz"
 -- Right (URI {uriScheme = Scheme {schemeBS = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {hostBS = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {queryPairs = [("bar[]","baz")]}, uriFragment = Nothing})
 parseURI :: URIParserOptions -> ByteString -> Either URIParseError URI
-parseURI opts = parseOnly' OtherError (uriParser opts)
+parseURI opts = parseOnly' OtherError (uriParser' opts)
 
 -- | Like 'parseURI', but do not parse scheme.
 parseRelativeRef :: URIParserOptions -> ByteString -> Either URIParseError RelativeRef
-parseRelativeRef opts = parseOnly' OtherError (relativeRefParser opts)
+parseRelativeRef opts = parseOnly' OtherError (relativeRefParser' opts)
 
 
 -------------------------------------------------------------------------------
@@ -147,19 +147,31 @@ type URIParser = Parser' URIParseError
 
 
 -------------------------------------------------------------------------------
+-- | Underlying attoparsec parser. Useful for composing with your own parsers.
+uriParser :: URIParserOptions -> Parser URI
+uriParser = unParser' . uriParser'
+
+
+-------------------------------------------------------------------------------
 -- | Toplevel parser for URIs
-uriParser :: URIParserOptions -> URIParser URI
-uriParser opts = do
+uriParser' :: URIParserOptions -> URIParser URI
+uriParser' opts = do
   scheme <- schemeParser
   void $ word8 colon `orFailWith` MalformedScheme MissingColon
-  RelativeRef authority path query fragment <- relativeRefParser opts
+  RelativeRef authority path query fragment <- relativeRefParser' opts
   return $ URI scheme authority path query fragment
 
 
 -------------------------------------------------------------------------------
+-- | Underlying attoparsec parser. Useful for composing with your own parsers.
+relativeRefParser :: URIParserOptions -> Parser RelativeRef
+relativeRefParser = unParser' . relativeRefParser'
+
+
+-------------------------------------------------------------------------------
 -- | Toplevel parser for relative refs
-relativeRefParser :: URIParserOptions -> URIParser RelativeRef
-relativeRefParser opts = do
+relativeRefParser' :: URIParserOptions -> URIParser RelativeRef
+relativeRefParser' opts = do
   (authority, path) <- hierPartParser <|> rrPathParser
   query <- queryParser opts
   frag  <- mFragmentParser
@@ -590,7 +602,7 @@ urlDecode' = urlDecode plusToSpace
 -- programmatically without doing something silly like parsing error
 -- messages. This wrapper attempts to concentrate these errors into
 -- one type.
-newtype Parser' e a = Parser' (Parser a)
+newtype Parser' e a = Parser' { unParser' :: Parser a}
                     deriving ( Functor
                              , Applicative
                              , Alternative

@@ -41,6 +41,8 @@ module URI.ByteString
     -- * Parsing
     , parseURI
     , parseRelativeRef
+    , uriParser
+    , relativeRefParser
     -- * Serializing
     , serializeURI
     , serializeRelativeRef
