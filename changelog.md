@@ -1,3 +1,8 @@
+0.1.7
+* Add bytestring serialization functions. This is a common use case
+  and exporting these prevents the user from directly depending on
+  blaze-builder and re-implementing these functions in every application.
+
 0.1.6
 * Add Ord instances
 
