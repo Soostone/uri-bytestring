@@ -52,8 +52,9 @@ laxURIParserOptions = URIParserOptions {
 -- | URI Serializer
 -------------------------------------------------------------------------------
 
--- | Serialize a URI into a strict ByteString
--- Example:
+-- | Serialize a URI into a Builder.
+--
+-- Example of serializing + converting to a lazy "Data.ByteString.Lazy.ByteString":
 --
 -- >>> BB.toLazyByteString $ serializeURI $ URI {uriScheme = Scheme {schemeBS = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {hostBS = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {queryPairs = [("bar","baz")]}, uriFragment = Just "quux"}
 -- "http://www.example.org/foo?bar=baz#quux"
@@ -63,6 +64,10 @@ serializeURI URI {..} = scheme <> BB.fromString ":" <>
   where
     scheme = bs $ schemeBS uriScheme
     rr = RelativeRef uriAuthority uriPath uriQuery uriFragment
+
+-- | Like 'serializeURI', with conversion into a strict 'ByteString'.
+serializeURI' :: URI -> ByteString
+serializeURI' = BB.toByteString . serializeURI
 
 -- | Like 'serializeURI', but do not render scheme.
 serializeRelativeRef :: RelativeRef -> Builder
@@ -74,6 +79,9 @@ serializeRelativeRef RelativeRef {..} = authority <> path <> query <> fragment
     query = serializeQuery rrQuery
     fragment = maybe mempty (\s -> c8 '#' <> bs s) rrFragment
 
+-- | Like 'serializeRelativeRef', with conversion into a strict 'ByteString'.
+serializeRelativeRef' :: URI -> ByteString
+serializeRelativeRef' = BB.toByteString . serializeURI
 
 -------------------------------------------------------------------------------
 serializeQuery :: Query -> Builder

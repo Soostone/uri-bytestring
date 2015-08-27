@@ -45,7 +45,9 @@ module URI.ByteString
     , relativeRefParser
     -- * Serializing
     , serializeURI
+    , serializeURI'
     , serializeRelativeRef
+    , serializeRelativeRef'
     -- * Low level utility functions
     , urlDecode
     , urlDecodeQuery
