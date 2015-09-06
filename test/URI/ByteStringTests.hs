@@ -102,7 +102,12 @@ parseUriTests = testGroup "parseUri"
           ""
           (Query [])
           (Just "only-fragment")
-
+  ,  testParses "https://www.example.org/weird%20path" $
+       URI (Scheme "https")
+           (Just (Authority Nothing (Host "www.example.org") Nothing))
+           "/weird path"
+           (Query [])
+           Nothing
 
   , parseTestURI strictURIParserOptions "http://www.example.org/." $
       Right $ URI
@@ -310,4 +315,12 @@ serializeURITests = testGroup "serializeURI"
                  (Just "somefragment")
        let res = BB.toLazyByteString (serializeURI uri)
        res @?= "http://user:pass@www.example.org/?foo=bar#somefragment"
+  , testCase "encodes decoded paths" $ do
+       let uri = URI (Scheme "http")
+                 (Just (Authority Nothing (Host "www.example.org") Nothing))
+                 "/weird path"
+                 (Query [])
+                 Nothing
+       let res = BB.toLazyByteString (serializeURI uri)
+       res @?= "http://www.example.org/weird%20path"
   ]

@@ -378,7 +378,7 @@ pathParser1 = pathParser' A.many1'
 -- | Parses the path section of a url. Note that while this can take
 -- percent-encoded characters, it does not itself decode them while parsing.
 pathParser' :: (Parser ByteString -> Parser [ByteString]) -> URIParser ByteString
-pathParser' repeatParser = (mconcat <$> repeatParser segmentParser) `orFailWith` MalformedPath
+pathParser' repeatParser = (urlDecodeQuery . mconcat <$> repeatParser segmentParser) `orFailWith` MalformedPath
   where
     segmentParser = mconcat <$> sequence [string "/", A.takeWhile (inClass pchar)]
 
