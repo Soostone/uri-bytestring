@@ -12,6 +12,7 @@ import           Control.Applicative
 import           Control.Monad
 import           Data.Attoparsec.ByteString
 import qualified Data.Attoparsec.ByteString         as A
+import qualified Data.Attoparsec.ByteString.Char8   as A8
 import           Data.Bits
 import           Data.ByteString                    (ByteString)
 import qualified Data.ByteString                    as BS
@@ -136,9 +137,16 @@ c8 = BB.fromChar
 parseURI :: URIParserOptions -> ByteString -> Either URIParseError URI
 parseURI opts = parseOnly' OtherError (uriParser' opts)
 
+
+-------------------------------------------------------------------------------
 -- | Like 'parseURI', but do not parse scheme.
 parseRelativeRef :: URIParserOptions -> ByteString -> Either URIParseError RelativeRef
 parseRelativeRef opts = parseOnly' OtherError (relativeRefParser' opts)
+
+
+-------------------------------------------------------------------------------
+parseURN :: URIParserOptions -> ByteString -> Either URIParseError URN
+parseURN opts = parseOnly' OtherError (urnParser' opts)
 
 
 -------------------------------------------------------------------------------
@@ -180,6 +188,48 @@ relativeRefParser' opts = do
     Nothing -> endOfInput `orFailWith` MalformedQuery
   return $ RelativeRef authority path query frag
 
+
+-------------------------------------------------------------------------------
+urnParser :: URIParserOptions -> Parser URN
+urnParser = unParser' . urnParser'
+
+
+-------------------------------------------------------------------------------
+--TODO: separate error type?
+--TODO: options necessary?
+urnParser' :: URIParserOptions -> URIParser URN
+urnParser' opts = do
+  _ <- string "urn:" `orFailWith` MalformedScheme
+  nid <- nidParser
+  _ <- word8 colon
+  nss <- nssParser
+  return (URN nid nss)
+
+
+-------------------------------------------------------------------------------
+nidParser :: URIParser ByteString
+nidParser = do
+    c1 <- satisfy (inClass alphaNum)
+    cs <- scan 0 keepReading
+    guard (not (BS.null cs))
+    return (BS.cons c1 cs)
+  where alphaNumHyp = alphaNum ++ "-"
+        keepReading n c | n <= 31 && inClass c alphaNumHyp = Just (c + 1)
+                        | otherwise                        = Nothing
+
+
+-------------------------------------------------------------------------------
+nssParser :: URIParser ByteString
+nssParser = A.many1 urnChar
+  where urnChar = trans <|> hexUrn
+        trans = inClass (alphaNum ++ other ++ reserved ++ "-")
+        other = "()+,.:=@;$_!*'"
+        reserved = "%/?#"
+        hexUrn = do
+          p <- A8.char '%'
+          h1 <- inClass hexClass
+          h2 <- inClass hexClass
+          return (BS.pack (p:h1:h2))
 
 -------------------------------------------------------------------------------
 -- | Parser for scheme, e.g. "http", "https", etc.
@@ -445,7 +495,7 @@ fragmentParser = A.takeWhile1 validFragmentWord `orFailWith` MalformedFragment
 
 -------------------------------------------------------------------------------
 hexDigit :: Word8 -> Bool
-hexDigit = inClass "0-9a-fA-F"
+hexDigit = inClass hexClass
 
 
 -------------------------------------------------------------------------------
@@ -497,6 +547,10 @@ pctEncoded = "%"
 subDelims :: String
 subDelims = "!$&'()*+,;="
 
+
+-------------------------------------------------------------------------------
+hexClass :: String
+hexClass = "0-9a-fA-F"
 
 -------------------------------------------------------------------------------
 alphaNum :: String

@@ -64,6 +64,16 @@ data URI = URI {
 
 
 -------------------------------------------------------------------------------
+-- | See <https://www.ietf.org/rfc/rfc2141.txt rfc2141>
+data URN = URN {
+      urnNSIdentifier :: ByteString
+    -- ^ Namespace identifier, aka NID
+    , urnNSSpecificString :: ByteString
+    -- ^ Namespace specific string, aka NSS
+    } deriving (Show, Eq, Generic, Typeable, Ord)
+
+
+-------------------------------------------------------------------------------
 data RelativeRef = RelativeRef {
       rrAuthority :: Maybe Authority
     , rrPath      :: ByteString
