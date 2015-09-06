@@ -13,6 +13,9 @@ build-type:          Simple
 cabal-version:       >=1.16
 homepage:            https://github.com/Soostone/uri-bytestring
 bug-reports:         https://github.com/Soostone/uri-bytestring/issues
+Tested-With:         GHC == 7.6.3
+                   , GHC == 7.8.4
+                   , GHC == 7.10.1
 extra-source-files:
   README.md
   CONTRIBUTING.md
