@@ -1,3 +1,6 @@
+0.1.8
+* Fix bug where uri-encoded paths would not decode when parsed.
+
 0.1.7
 * Add bytestring serialization functions. This is a common use case
   and exporting these prevents the user from directly depending on
