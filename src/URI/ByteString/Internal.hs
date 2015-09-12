@@ -80,8 +80,8 @@ serializeRelativeRef RelativeRef {..} = authority <> path <> query <> fragment
     fragment = maybe mempty (\s -> c8 '#' <> bs s) rrFragment
 
 -- | Like 'serializeRelativeRef', with conversion into a strict 'ByteString'.
-serializeRelativeRef' :: URI -> ByteString
-serializeRelativeRef' = BB.toByteString . serializeURI
+serializeRelativeRef' :: RelativeRef -> ByteString
+serializeRelativeRef' = BB.toByteString . serializeRelativeRef
 
 -------------------------------------------------------------------------------
 serializeQuery :: Query -> Builder
