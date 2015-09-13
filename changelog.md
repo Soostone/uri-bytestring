@@ -1,3 +1,6 @@
+0.1.9
+* Fix type bug in serializeRelativeRef'
+
 0.1.8
 * Fix bug where uri-encoded paths would not decode when parsed.
 
