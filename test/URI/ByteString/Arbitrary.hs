@@ -1,4 +1,5 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TemplateHaskell   #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module URI.ByteString.Arbitrary where
 
@@ -35,7 +36,7 @@ instance Arbitrary Port where
   arbitrary = Port <$> arbitrary
 
 
-instance Arbitrary URI where
+instance Arbitrary (URIRef Absolute) where
   arbitrary = URI <$> arbitrary
                   <*> arbitrary
                   <*> arbitrary
@@ -43,7 +44,7 @@ instance Arbitrary URI where
                   <*> arbitrary
 
 
-instance Arbitrary RelativeRef where
+instance Arbitrary (URIRef Relative) where
   arbitrary = RelativeRef <$> arbitrary
                           <*> arbitrary
                           <*> arbitrary

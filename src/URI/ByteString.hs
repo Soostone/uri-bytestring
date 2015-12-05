@@ -31,23 +31,24 @@ module URI.ByteString
     , Authority(..)
     , UserInfo(..)
     , Query(..)
-    , URI(..)
-    , RelativeRef(..)
+    , URIRef(..)
+    , Absolute
+    , Relative
     , SchemaError(..)
     , URIParseError(..)
     , URIParserOptions(..)
     , strictURIParserOptions
     , laxURIParserOptions
+    -- * Operations
+    , toAbsolute
     -- * Parsing
     , parseURI
     , parseRelativeRef
     , uriParser
     , relativeRefParser
     -- * Serializing
-    , serializeURI
-    , serializeURI'
-    , serializeRelativeRef
-    , serializeRelativeRef'
+    , serializeURIRef
+    , serializeURIRef'
     -- * Low level utility functions
     , urlDecode
     , urlDecodeQuery
@@ -70,19 +71,29 @@ module URI.ByteString
     , uiPasswordL
     -- ** Lenses over 'Query'
     , queryPairsL
-    -- ** Lenses over 'URI'
+    -- ** Lenses over 'URIRef'
     , uriSchemeL
+    , authorityL
+    , pathL
+    , queryL
+    , fragmentL
+    -- ** Lenses over 'URIParserOptions'
+    , upoValidQueryCharL
+    -- ** Deprecated
+    , URI
+    , RelativeRef
+    , serializeURI
+    , serializeURI'
+    , serializeRelativeRef
+    , serializeRelativeRef'
     , uriAuthorityL
     , uriPathL
     , uriQueryL
     , uriFragmentL
-    -- ** Lenses over 'RelativeRef'
     , rrAuthorityL
     , rrPathL
     , rrQueryL
     , rrFragmentL
-    -- ** Lenses over 'URIParserOptions'
-    , upoValidQueryCharL
     ) where
 
 -------------------------------------------------------------------------------

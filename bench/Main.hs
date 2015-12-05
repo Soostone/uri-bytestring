@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs             #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Main (main) where
@@ -16,13 +18,15 @@ import           URI.ByteString
 instance NFData Authority
 instance NFData Host
 instance NFData UserInfo
-instance NFData URI
-instance NFData RelativeRef
 instance NFData SchemaError
 instance NFData URIParseError
 instance NFData Scheme
 instance NFData Port
 instance NFData Query
+
+instance NFData (URIRef a) where
+  rnf (URI a b c d e) = rnf a `seq` rnf b `seq` rnf c `seq` rnf d `seq` rnf e
+  rnf (RelativeRef b c d e) = rnf b `seq` rnf c `seq` rnf d `seq` rnf e
 
 
 -------------------------------------------------------------------------------
@@ -39,8 +43,8 @@ main = defaultMain
       ]
   , bgroup "serializing"
     [
-      bench "URI.ByteString.serializeURI" $ nf (toLazyByteString . serializeURI) exampleURI
-    , bench "URI.ByteString.serializeRelativeRef" $ nf (toLazyByteString . serializeRelativeRef) exampleRelativeRef
+      bench "URI.ByteString.serializeURIRef on URI" $ nf (toLazyByteString . serializeURIRef) exampleURI
+    , bench "URI.ByteString.serializeURIRef on relative ref" $ nf (toLazyByteString . serializeURIRef) exampleRelativeRef
     ]
   ]
 

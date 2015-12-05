@@ -1,6 +1,9 @@
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving         #-}
 module URI.ByteString.Types where
 
 -------------------------------------------------------------------------------
@@ -53,24 +56,43 @@ newtype Query = Query { queryPairs :: [(ByteString, ByteString)] }
 
 
 -------------------------------------------------------------------------------
-data URI = URI {
-      uriScheme    :: Scheme
-    , uriAuthority :: Maybe Authority
-    , uriPath      :: ByteString
-    , uriQuery     :: Query
-    , uriFragment  :: Maybe ByteString
-    -- ^ URI fragment. Does not include the #
-    } deriving (Show, Eq, Generic, Typeable, Ord)
+-- | Note: URI fragment does not include the #
+data URIRef a where
+  URI :: { uriScheme :: Scheme
+         , uriAuthority :: Maybe Authority
+         , uriPath :: ByteString
+         , uriQuery :: Query
+         , uriFragment :: Maybe ByteString
+         } -> URIRef Absolute
+  RelativeRef :: { rrAuthority :: Maybe Authority
+                 , rrPath :: ByteString
+                 , rrQuery :: Query
+                 , rrFragment :: Maybe ByteString
+                 } -> URIRef Relative
+
+deriving instance Show (URIRef a)
+deriving instance Eq (URIRef a)
+-- deriving instance Generic (URIRef a)
+deriving instance Ord (URIRef a)
+
+#ifdef WITH_TYPEABLE
+deriving instance Typeable URIRef
+#endif
+
+-------------------------------------------------------------------------------
+data Absolute deriving(Typeable)
 
 
 -------------------------------------------------------------------------------
-data RelativeRef = RelativeRef {
-      rrAuthority :: Maybe Authority
-    , rrPath      :: ByteString
-    , rrQuery     :: Query
-    , rrFragment  :: Maybe ByteString
-    -- ^ URI fragment. Does not include the #
-    } deriving (Show, Eq, Generic, Typeable, Ord)
+data Relative deriving(Typeable)
+
+
+-------------------------------------------------------------------------------
+type URI = URIRef Absolute
+
+
+-------------------------------------------------------------------------------
+type RelativeRef = URIRef Relative
 
 
 -------------------------------------------------------------------------------
