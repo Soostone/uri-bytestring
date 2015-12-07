@@ -407,7 +407,8 @@ queryParser opts = do
       | otherwise     -> fail' MalformedPath
     _      -> pure mempty
   where
-    itemsParser = Query <$> A.sepBy' (queryItemParser opts) (word8' ampersand)
+    itemsParser = Query . filter neQuery <$> A.sepBy' (queryItemParser opts) (word8' ampersand)
+    neQuery (k, _) = not (BS.null k)
 
 
 -------------------------------------------------------------------------------
@@ -416,10 +417,13 @@ queryParser opts = do
 -- optional. & separators need to be handled further up.
 queryItemParser :: URIParserOptions -> URIParser (ByteString, ByteString)
 queryItemParser opts = do
-  s <- A.takeWhile1 (upoValidQueryChar opts) `orFailWith` MalformedQuery
-  let (k, vWithEquals) = BS.break (== equals) s
-  let v = BS.drop 1 vWithEquals
-  return (urlDecodeQuery k, urlDecodeQuery v)
+  s <- A.takeWhile (upoValidQueryChar opts) `orFailWith` MalformedQuery
+  if BS.null s
+     then return (mempty, mempty)
+     else do
+       let (k, vWithEquals) = BS.break (== equals) s
+       let v = BS.drop 1 vWithEquals
+       return (urlDecodeQuery k, urlDecodeQuery v)
 
 
 -------------------------------------------------------------------------------
