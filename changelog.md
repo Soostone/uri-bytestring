@@ -1,3 +1,6 @@
+0.1.9.2
+* Fix bug wher trailing ampersand in the query section would not parse.
+
 0.1.9
 * Fix type bug in serializeRelativeRef'
 
