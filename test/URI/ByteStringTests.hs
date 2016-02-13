@@ -3,11 +3,11 @@
 module URI.ByteStringTests (tests) where
 
 -------------------------------------------------------------------------------
-import           Control.Lens
 import qualified Blaze.ByteString.Builder as BB
 import           Data.ByteString          (ByteString)
 import qualified Data.ByteString.Char8    as B8
 import           Data.Monoid
+import           Lens.Simple
 import           Test.Tasty
 import           Test.Tasty.HUnit
 import           Test.Tasty.QuickCheck

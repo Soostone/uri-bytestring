@@ -68,7 +68,7 @@ test-suite test
     , base
     , blaze-builder
     , bytestring
-    , lens
+    , lens-simple
     , quickcheck-instances
     , semigroups
   default-language:    Haskell2010

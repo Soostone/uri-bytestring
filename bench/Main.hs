@@ -3,9 +3,9 @@
 module Main (main) where
 
 -------------------------------------------------------------------------------
-import           Control.DeepSeq.Generics
-import           Criterion.Main
 import           Blaze.ByteString.Builder
+import           Control.DeepSeq
+import           Criterion.Main
 import           Data.String
 import qualified Network.URI              as NU
 -------------------------------------------------------------------------------
