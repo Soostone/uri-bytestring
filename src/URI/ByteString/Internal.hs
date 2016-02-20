@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE RecordWildCards            #-}
@@ -48,29 +49,47 @@ laxURIParserOptions = URIParserOptions {
       upoValidQueryChar = validForQueryLax
     }
 
+
+-------------------------------------------------------------------------------
+-- | @toAbsolute scheme ref@ converts @ref@ to an absolute URI.
+-- If @ref@ is already absolute, then it is unchanged.
+toAbsolute :: Scheme -> URIRef a -> URIRef Absolute
+toAbsolute scheme (RelativeRef {..}) = URI scheme rrAuthority rrPath rrQuery rrFragment
+toAbsolute _ uri@(URI {..}) = uri
+
 -------------------------------------------------------------------------------
 -- | URI Serializer
 -------------------------------------------------------------------------------
 
--- | Serialize a URI into a Builder.
+-- | Serialize a URI reference into a 'Builder'.
 --
 -- Example of serializing + converting to a lazy "Data.ByteString.Lazy.ByteString":
 --
--- >>> BB.toLazyByteString $ serializeURI $ URI {uriScheme = Scheme {schemeBS = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {hostBS = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {queryPairs = [("bar","baz")]}, uriFragment = Just "quux"}
+-- >>> BB.toLazyByteString $ serializeURIRef $ URI {uriScheme = Scheme {schemeBS = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {hostBS = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {queryPairs = [("bar","baz")]}, uriFragment = Just "quux"}
 -- "http://www.example.org/foo?bar=baz#quux"
-serializeURI :: URI -> Builder
-serializeURI URI {..} = scheme <> BB.fromString ":" <>
-                        serializeRelativeRef rr
+serializeURIRef :: URIRef a -> Builder
+serializeURIRef uri@(URI {..}) = serializeURI uri
+serializeURIRef uri@(RelativeRef {..}) = serializeRelativeRef uri
+
+-- | Like 'serializeURIRef', with conversion into a strict 'ByteString'.
+serializeURIRef' :: URIRef a -> ByteString
+serializeURIRef' = BB.toByteString . serializeURIRef
+
+-- | Serialize a URI into a Builder.
+serializeURI :: URIRef Absolute -> Builder
+serializeURI URI {..} = scheme <> BB.fromString ":" <> serializeRelativeRef rr
   where
     scheme = bs $ schemeBS uriScheme
     rr = RelativeRef uriAuthority uriPath uriQuery uriFragment
+{-# DEPRECATED serializeURI "Use 'serializeURIRef' instead" #-}
 
 -- | Like 'serializeURI', with conversion into a strict 'ByteString'.
-serializeURI' :: URI -> ByteString
+serializeURI' :: URIRef Absolute -> ByteString
 serializeURI' = BB.toByteString . serializeURI
+{-# DEPRECATED serializeURI' "Use 'serializeURIRef'' instead" #-}
 
 -- | Like 'serializeURI', but do not render scheme.
-serializeRelativeRef :: RelativeRef -> Builder
+serializeRelativeRef :: URIRef Relative -> Builder
 serializeRelativeRef RelativeRef {..} = authority <> path <> query <> fragment
   where
     path = mconcat $ intersperse (c8 '/') $ map urlEncodePath segs
@@ -78,10 +97,12 @@ serializeRelativeRef RelativeRef {..} = authority <> path <> query <> fragment
     authority = maybe mempty serializeAuthority rrAuthority
     query = serializeQuery rrQuery
     fragment = maybe mempty (\s -> c8 '#' <> bs s) rrFragment
+{-# DEPRECATED serializeRelativeRef "Use 'serializeURIRef' instead" #-}
 
 -- | Like 'serializeRelativeRef', with conversion into a strict 'ByteString'.
-serializeRelativeRef' :: RelativeRef -> ByteString
+serializeRelativeRef' :: URIRef Relative -> ByteString
 serializeRelativeRef' = BB.toByteString . serializeRelativeRef
+{-# DEPRECATED serializeRelativeRef' "Use 'serializeURIRef'' instead" #-}
 
 -------------------------------------------------------------------------------
 serializeQuery :: Query -> Builder
@@ -141,11 +162,11 @@ c8 = BB.fromChar
 -- >>> let myLaxOptions = URIParserOptions { upoValidQueryChar = liftA2 (||) (upoValidQueryChar strictURIParserOptions) (inClass "[]")}
 -- >>> parseURI myLaxOptions "http://www.example.org/foo?bar[]=baz"
 -- Right (URI {uriScheme = Scheme {schemeBS = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {hostBS = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {queryPairs = [("bar[]","baz")]}, uriFragment = Nothing})
-parseURI :: URIParserOptions -> ByteString -> Either URIParseError URI
+parseURI :: URIParserOptions -> ByteString -> Either URIParseError (URIRef Absolute)
 parseURI opts = parseOnly' OtherError (uriParser' opts)
 
 -- | Like 'parseURI', but do not parse scheme.
-parseRelativeRef :: URIParserOptions -> ByteString -> Either URIParseError RelativeRef
+parseRelativeRef :: URIParserOptions -> ByteString -> Either URIParseError (URIRef Relative)
 parseRelativeRef opts = parseOnly' OtherError (relativeRefParser' opts)
 
 
@@ -156,13 +177,13 @@ type URIParser = Parser' URIParseError
 
 -------------------------------------------------------------------------------
 -- | Underlying attoparsec parser. Useful for composing with your own parsers.
-uriParser :: URIParserOptions -> Parser URI
+uriParser :: URIParserOptions -> Parser (URIRef Absolute)
 uriParser = unParser' . uriParser'
 
 
 -------------------------------------------------------------------------------
 -- | Toplevel parser for URIs
-uriParser' :: URIParserOptions -> URIParser URI
+uriParser' :: URIParserOptions -> URIParser (URIRef Absolute)
 uriParser' opts = do
   scheme <- schemeParser
   void $ word8 colon `orFailWith` MalformedScheme MissingColon
@@ -172,13 +193,13 @@ uriParser' opts = do
 
 -------------------------------------------------------------------------------
 -- | Underlying attoparsec parser. Useful for composing with your own parsers.
-relativeRefParser :: URIParserOptions -> Parser RelativeRef
+relativeRefParser :: URIParserOptions -> Parser (URIRef Relative)
 relativeRefParser = unParser' . relativeRefParser'
 
 
 -------------------------------------------------------------------------------
 -- | Toplevel parser for relative refs
-relativeRefParser' :: URIParserOptions -> URIParser RelativeRef
+relativeRefParser' :: URIParserOptions -> URIParser (URIRef Relative)
 relativeRefParser' opts = do
   (authority, path) <- hierPartParser <|> rrPathParser
   query <- queryParser opts

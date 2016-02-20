@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs               #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module URI.ByteStringTests (tests) where
@@ -206,31 +207,31 @@ lensTests = testGroup "lenses"
   , testProperty "uriSchemeL Lens" $ \uri x ->
      (uri ^. uriSchemeL === uriScheme uri) .&&.
      ((uri & uriSchemeL .~ x) === uri { uriScheme = x })
-  , testProperty "uriAuthorityL Lens" $ \uri x ->
-     (uri ^. uriAuthorityL === uriAuthority uri) .&&.
-     ((uri & uriAuthorityL .~ x) === uri { uriAuthority = x })
-  , testProperty "uriPathL Lens" $ \uri x ->
-     (uri ^. uriPathL === uriPath uri) .&&.
-     ((uri & uriPathL .~ x) === uri { uriPath = x })
-  , testProperty "uriQueryL Lens" $ \uri x ->
-     (uri ^. uriQueryL === uriQuery uri) .&&.
-     ((uri & uriQueryL .~ x) === uri { uriQuery = x })
-  , testProperty "uriFragmentL Lens" $ \uri x ->
-     (uri ^. uriFragmentL === uriFragment uri) .&&.
-     ((uri & uriFragmentL .~ x) === uri { uriFragment = x })
+  , testProperty "authorityL Lens on URI" $ \uri x ->
+     (uri ^. authorityL === uriAuthority uri) .&&.
+     ((uri & authorityL .~ x) === uri { uriAuthority = x })
+  , testProperty "pathL Lens on URI" $ \uri x ->
+     (uri ^. pathL === uriPath uri) .&&.
+     ((uri & pathL .~ x) === uri { uriPath = x })
+  , testProperty "queryL Lens on URI" $ \uri x ->
+     (uri ^. queryL === uriQuery uri) .&&.
+     ((uri & queryL .~ x) === uri { uriQuery = x })
+  , testProperty "fragmentL Lens on URI" $ \uri x ->
+     (uri ^. fragmentL === uriFragment uri) .&&.
+     ((uri & fragmentL .~ x) === uri { uriFragment = x })
 
-  , testProperty "rrAuthorityL Lens" $ \rr x ->
-     (rr ^. rrAuthorityL === rrAuthority rr) .&&.
-     ((rr & rrAuthorityL .~ x) === rr { rrAuthority = x })
-  , testProperty "rrPathL Lens" $ \rr x ->
-     (rr ^. rrPathL === rrPath rr) .&&.
-     ((rr & rrPathL .~ x) === rr { rrPath = x })
-  , testProperty "rrQueryL Lens" $ \rr x ->
-     (rr ^. rrQueryL === rrQuery rr) .&&.
-     ((rr & rrQueryL .~ x) === rr { rrQuery = x })
-  , testProperty "rrFragmentL Lens" $ \rr x ->
-     (rr ^. rrFragmentL === rrFragment rr) .&&.
-     ((rr & rrFragmentL .~ x) === rr { rrFragment = x })
+  , testProperty "authorityL Lens on relative ref" $ \rr x ->
+     (rr ^. authorityL === rrAuthority rr) .&&.
+     ((rr & authorityL .~ x) === rr { rrAuthority = x })
+  , testProperty "pathL Lens on relative ref" $ \rr x ->
+     (rr ^. pathL === rrPath rr) .&&.
+     ((rr & pathL .~ x) === rr { rrPath = x })
+  , testProperty "queryL Lens on relative ref" $ \rr x ->
+     (rr ^. queryL === rrQuery rr) .&&.
+     ((rr & queryL .~ x) === rr { rrQuery = x })
+  , testProperty "fragmentL Lens on relative ref" $ \rr x ->
+     (rr ^. fragmentL === rrFragment rr) .&&.
+     ((rr & fragmentL .~ x) === rr { rrFragment = x })
   ]
 
 
@@ -296,7 +297,7 @@ roundtripTestURI
     -> ByteString
     -> TestTree
 roundtripTestURI opts s =
-    testCase (B8.unpack s) $ (parseURI opts s >>= return . BB.toByteString . serializeURI) @?= Right s
+    testCase (B8.unpack s) $ (parseURI opts s >>= return . serializeURIRef') @?= Right s
 
 
 -------------------------------------------------------------------------------
@@ -311,7 +312,7 @@ parseTestRelativeRef opts s r =
 
 -------------------------------------------------------------------------------
 serializeURITests :: TestTree
-serializeURITests = testGroup "serializeURI"
+serializeURITests = testGroup "serializeURIRef"
   [
     testCase "renders userinfo correctly" $ do
        let ui = UserInfo "user" "pass"
@@ -320,7 +321,7 @@ serializeURITests = testGroup "serializeURI"
                  "/"
                  (Query [("foo", "bar")])
                  (Just "somefragment")
-       let res = BB.toLazyByteString (serializeURI uri)
+       let res = BB.toLazyByteString (serializeURIRef uri)
        res @?= "http://user:pass@www.example.org/?foo=bar#somefragment"
   , testCase "encodes decoded paths" $ do
        let uri = URI (Scheme "http")
@@ -328,6 +329,6 @@ serializeURITests = testGroup "serializeURI"
                  "/weird path"
                  (Query [])
                  Nothing
-       let res = BB.toLazyByteString (serializeURI uri)
+       let res = BB.toLazyByteString (serializeURIRef uri)
        res @?= "http://www.example.org/weird%20path"
   ]
