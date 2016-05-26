@@ -1,0 +1,12 @@
+resolver: lts-6.0
+
+packages:
+- '.'
+
+extra-deps: []
+
+flags:
+  uri-bytestring:
+    lib-Werror: true
+
+extra-package-dbs: []
