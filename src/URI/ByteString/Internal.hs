@@ -684,13 +684,13 @@ string' = Parser' . string
 -------------------------------------------------------------------------------
 -- | Combinator for tunnelling more specific error types through the
 -- attoparsec machinery using read/show.
-orFailWith :: (Show e, Read e) => Parser a -> e -> Parser' e a
+orFailWith :: (Show e) => Parser a -> e -> Parser' e a
 orFailWith p e = Parser' p <|> fail' e
 
 
 -------------------------------------------------------------------------------
 -- | Should be preferred to fail'
-fail' :: (Show e, Read e) => e -> Parser' e a
+fail' :: (Show e) => e -> Parser' e a
 fail' = fail . show
 
 
@@ -703,7 +703,7 @@ parseBetween a b f = choice parsers
 
 -------------------------------------------------------------------------------
 -- | Stronger-typed variation of parseOnly'. Consumes all input.
-parseOnly' :: (Read e, Show e)
+parseOnly' :: (Read e)
               => (String -> e) -- ^ Fallback if we can't parse a failure message for the sake of totality.
               -> Parser' e a
               -> ByteString

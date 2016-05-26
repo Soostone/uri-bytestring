@@ -1,0 +1,10 @@
+resolver: lts-2.12
+packages:
+  - '.'
+extra-deps:
+  - lens-simple-0.1.0.8
+  - lens-family-1.2.0
+flags:
+  uri-bytestring:
+    lib-Werror: true
+extra-package-dbs: []
