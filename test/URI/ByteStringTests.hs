@@ -382,6 +382,10 @@ normalizeURITests = testGroup "normalization"
   , testCase "remove dot segments" $ do
       normalizeURIBS o { unoRemoveDotSegments = True } "http://example.org/a/b/c/./../../g" @?=
         "http://example.org/a/g"
+
+  , testCase "percent encoding is upcased automatically" $ do
+      normalizeURIBS o "http://example.org/a?foo%3abar=baz" @?=
+        "http://example.org/a?foo%3Abar=baz"
   ]
   where
     o = noNormalization
