@@ -54,7 +54,7 @@ laxURIParserOptions = URIParserOptions {
 
 -------------------------------------------------------------------------------
 noNormalization :: URINormalizationOptions
-noNormalization = URINormalizationOptions False False False False False False
+noNormalization = URINormalizationOptions False False False False False False False
 
 
 -------------------------------------------------------------------------------
@@ -132,7 +132,10 @@ normalizeRelativeRef o@URINormalizationOptions {..} mScheme RelativeRef {..} =
     path
       | unoSlashEmptyPath && BS.null rrPath = "/"
       | otherwise  = mconcat (intersperse (c8 '/') (map urlEncodePath segs))
-    segs = dropSegs (BS.split slash rrPath)
+    segs = dropSegs (BS.split slash (pathRewrite rrPath))
+    pathRewrite
+      | unoRemoveDotSegments = removeDotSegments
+      | otherwise = id
     dropSegs [] = []
     dropSegs (h:t)
       | unoDropExtraSlashes = h:(filter (not . BS.null) t)
@@ -140,6 +143,50 @@ normalizeRelativeRef o@URINormalizationOptions {..} mScheme RelativeRef {..} =
     authority = maybe mempty (serializeAuthority o mScheme) rrAuthority
     query = serializeQuery o rrQuery
     fragment = maybe mempty (\s -> c8 '#' <> bs s) rrFragment
+
+
+-------------------------------------------------------------------------------
+--TODO: this is probably ripe for benchmarking
+-- | Algorithm described in
+-- <https://tools.ietf.org/html/rfc3986#section-5.2.4>, reproduced
+-- artlessly.
+removeDotSegments :: ByteString -> ByteString
+removeDotSegments path = mconcat (rl2L (go path (RL [])))
+  where
+    go inBuf outBuf
+      -- A. If the input buffer begins with prefix of ../ or ./ then
+      -- remove the prefix from the input buffer
+      | BS8.isPrefixOf "../" inBuf = go (BS8.drop 3 inBuf) outBuf
+      | BS8.isPrefixOf "./" inBuf  = go (BS8.drop 2 inBuf) outBuf
+      -- B. If the input buffer begins with a prefix of "/./" or "/.",
+      -- where "." is a complete path segment, then replace that
+      -- prefix with "/" in the input buffer. TODO: I think "a
+      -- complete path segment" means its the whole thing?
+      | BS.isPrefixOf "/./" inBuf = go (BS8.drop 2 inBuf) outBuf
+      | inBuf == "/." = go "/" outBuf
+      -- C. If the input buffer begins with a prefix of "/../" or
+      -- "/..", where ".." is a complete path segment, then replace
+      -- that prefix with "/" in the input buffer and remove the last
+      -- segment and its preceding "/" (if any) from the output buffer
+      | BS.isPrefixOf "/../" inBuf = go (BS8.drop 3 inBuf) (unsnoc (unsnoc outBuf))
+      | inBuf == "/.." = go "/" (unsnoc (unsnoc outBuf))
+      -- D. If the input buffer consists only of "." or "..", then
+      -- remove that from the input buffer
+      | inBuf == "." = go mempty outBuf
+      | inBuf == ".." = go mempty outBuf
+      -- E. Move the first path segment in the input buffer to the end
+      -- of the output buffer, including the initial "/" character (if
+      -- any) and any subsequent characters up to, but not including,
+      -- the next "/" character or the end of the input buffer.
+      | otherwise = case BS8.uncons inBuf of
+                      Just ('/', rest) ->
+                        let (thisSeg, inBuf') = BS8.span (/= '/') rest
+                        in go inBuf' (outBuf |> "/" |> thisSeg)
+                      Just (_, _) ->
+                        let (thisSeg, inBuf') = BS8.span (/= '/') inBuf
+                        in go inBuf' (outBuf |> thisSeg)
+                      Nothing -> outBuf
+
 
 
 -------------------------------------------------------------------------------
@@ -873,3 +920,21 @@ urlEncodePath = urlEncode unreservedPath8
 -------------------------------------------------------------------------------
 downcaseBS :: ByteString -> ByteString
 downcaseBS = BS8.map toLower
+
+
+-------------------------------------------------------------------------------
+-- | Simple data structure to get O(1) prepends on a list and defers the O(n)
+newtype RL a = RL [a] deriving (Show)
+
+
+(|>) :: RL a -> a -> RL a
+RL as |> a = RL (a:as)
+
+
+rl2L :: RL a -> [a]
+rl2L (RL as) = reverse as
+
+
+unsnoc :: RL a -> RL a
+unsnoc (RL [])     = RL []
+unsnoc (RL (_:xs)) = RL xs

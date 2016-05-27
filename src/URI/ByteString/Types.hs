@@ -105,15 +105,17 @@ data URIParserOptions = URIParserOptions {
 
 -------------------------------------------------------------------------------
 data URINormalizationOptions = URINormalizationOptions {
-      unoDowncaseScheme :: Bool
-    , unoDowncaseHost :: Bool
-    , unoDropDefPort :: Bool
+      unoDowncaseScheme   :: Bool
+    , unoDowncaseHost     :: Bool
+    , unoDropDefPort      :: Bool
     -- ^ If the Schema is known and the port is the default (e.g. 80 for http) it is removed.
-    , unoSlashEmptyPath :: Bool
+    , unoSlashEmptyPath   :: Bool
     -- ^ If the path is empty, set it to /
     , unoDropExtraSlashes :: Bool
     -- ^ Rewrite path from /foo//bar///baz to /foo/bar/baz
-    , unoSortParameters :: Bool
+    , unoSortParameters   :: Bool
+    , unoRemoveDotSegments      :: Bool
+    -- ^ Remove dot segments as per <https://tools.ietf.org/html/rfc3986#section-5.2.4 RFC3986 Section 5.2.4>
     } deriving (Show, Eq)
 
 

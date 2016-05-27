@@ -371,13 +371,17 @@ normalizeURITests = testGroup "normalization"
       normalizeURIBS o { unoSlashEmptyPath = True } "http://example.org/foo/bar" @?=
         "http://example.org/foo/bar"
 
-  , testCase "drop redundant slashes" $ do --TODO set redundant slashes
+  , testCase "drop redundant slashes" $ do
       normalizeURIBS o { unoDropExtraSlashes = True } "http://example.org/foo//bar///baz" @?=
         "http://example.org/foo/bar/baz"
-        
-  , testCase "sort params" $ do --TODO set redundant slashes
+
+  , testCase "sort params" $ do
       normalizeURIBS o { unoSortParameters = True } "http://example.org/foo?zulu=1&charlie=&alpha=1" @?=
         "http://example.org/foo?alpha=1&charlie=&zulu=1"
+
+  , testCase "remove dot segments" $ do
+      normalizeURIBS o { unoRemoveDotSegments = True } "http://example.org/a/b/c/./../../g" @?=
+        "http://example.org/a/g"
   ]
   where
     o = noNormalization

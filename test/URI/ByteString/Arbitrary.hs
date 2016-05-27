@@ -70,6 +70,7 @@ instance Arbitrary URINormalizationOptions where
                                       <*> arbitrary
                                       <*> arbitrary
                                       <*> arbitrary
+                                      <*> arbitrary
 
 $(derive makeArbitrary ''SchemaError)
 $(derive makeArbitrary ''URIParseError)
