@@ -61,7 +61,7 @@ noNormalization = URINormalizationOptions False False False False False False Fa
 
 -------------------------------------------------------------------------------
 -- | The set of known default ports to schemes. Currently only
--- contains http/80 and https/443. Feel free to extend it if needed
+-- contains http\/80 and https\/443. Feel free to extend it if needed
 -- with 'unoDefaultPorts'.
 httpDefaultPorts :: M.Map Scheme Port
 httpDefaultPorts = M.fromList [ (Scheme "http", Port 80)
