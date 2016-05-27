@@ -42,7 +42,9 @@ module URI.ByteString
     , URINormalizationOptions(..)
     , noNormalization
     , rfc3986Normalization
+    , httpNormalization
     , aggressiveNormalization
+    , httpDefaultPorts
     -- * Operations
     , toAbsolute
     -- * Parsing

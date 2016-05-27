@@ -21,6 +21,7 @@ import           Data.Char                          (ord, toLower)
 import           Data.Ix
 import           Data.List                          (delete, intersperse,
                                                      sortBy, stripPrefix, (\\))
+import qualified Data.Map.Strict                    as M
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Ord                           (comparing)
@@ -53,18 +54,50 @@ laxURIParserOptions = URIParserOptions {
 
 
 -------------------------------------------------------------------------------
+-- | All normalization options disabled
 noNormalization :: URINormalizationOptions
-noNormalization = URINormalizationOptions False False False False False False False
+noNormalization = URINormalizationOptions False False False False False False False httpDefaultPorts
 
 
 -------------------------------------------------------------------------------
+-- | The set of known default ports to schemes. Currently only
+-- contains http/80 and https/443. Feel free to extend it if needed
+-- with 'unoDefaultPorts'.
+httpDefaultPorts :: M.Map Scheme Port
+httpDefaultPorts = M.fromList [ (Scheme "http", Port 80)
+                              , (Scheme "https", Port 443)
+                              ]
+
+
+-------------------------------------------------------------------------------
+-- | Only normalizations deemed appropriate for all protocols by
+-- RFC3986 enabled, namely:
+--
+-- * Downcase Scheme
+-- * Downcase Host
+-- * Remove Dot Segments
 rfc3986Normalization :: URINormalizationOptions
-rfc3986Normalization = error "rfc3986Normalization"
+rfc3986Normalization = noNormalization { unoDowncaseScheme = True
+                                       , unoDowncaseHost = True
+                                       , unoRemoveDotSegments = True
+                                       }
 
 
 -------------------------------------------------------------------------------
+-- | The same as 'rfc3986Normalization' but with additional enabled
+-- features if you're working with HTTP URIs:
+--
+-- * Drop Default Port (with 'httpDefaultPorts')
+-- * Drop Extra Slashes
+httpNormalization :: URINormalizationOptions
+httpNormalization = rfc3986Normalization { unoDropDefPort = True
+                                         , unoSlashEmptyPath = True
+                                         }
+
+-------------------------------------------------------------------------------
+-- | All options enabled
 aggressiveNormalization :: URINormalizationOptions
-aggressiveNormalization = error "aggressiveNormalization"
+aggressiveNormalization = URINormalizationOptions True True True True True True True httpDefaultPorts
 
 
 -------------------------------------------------------------------------------
@@ -73,6 +106,7 @@ aggressiveNormalization = error "aggressiveNormalization"
 toAbsolute :: Scheme -> URIRef a -> URIRef Absolute
 toAbsolute scheme (RelativeRef {..}) = URI scheme rrAuthority rrPath rrQuery rrFragment
 toAbsolute _ uri@(URI {..}) = uri
+
 
 -------------------------------------------------------------------------------
 -- | URI Serializer
@@ -102,6 +136,10 @@ serializeURI = normalizeURIRef noNormalization
 
 
 -------------------------------------------------------------------------------
+-- | Similar to 'serializeURIRef' but performs configurable degrees of
+-- URI normalization. If your goal is the fastest serialization speed
+-- possible, 'serializeURIRef' will be fine. If you intend on
+-- comparing URIs (say for caching purposes), you'll want to use this.
 normalizeURIRef :: URINormalizationOptions -> URIRef a -> Builder
 normalizeURIRef o uri@(URI {..}) = normalizeURI o uri
 normalizeURIRef o uri@(RelativeRef {}) = normalizeRelativeRef o Nothing uri
@@ -240,9 +278,9 @@ serializeAuthority URINormalizationOptions {..} mScheme Authority {..} = BB.from
     dropPort scheme
       | unoDropDefPort = dropPort' scheme
       | otherwise = Just
-    dropPort' (Scheme "http") (Port 80)   = Nothing
-    dropPort' (Scheme "https") (Port 443) = Nothing
-    dropPort' _ p         = Just p
+    dropPort' s p
+      | M.lookup s unoDefaultPorts == Just p = Nothing
+      | otherwise = Just p
 
 
 -------------------------------------------------------------------------------
@@ -826,10 +864,10 @@ parseBetween a b f = choice parsers
 -------------------------------------------------------------------------------
 -- | Stronger-typed variation of parseOnly'. Consumes all input.
 parseOnly' :: (Read e)
-              => (String -> e) -- ^ Fallback if we can't parse a failure message for the sake of totality.
-              -> Parser' e a
-              -> ByteString
-              -> Either e a
+           => (String -> e) -- ^ Fallback if we can't parse a failure message for the sake of totality.
+           -> Parser' e a
+           -> ByteString
+           -> Either e a
 parseOnly' noParse (Parser' p) = fmapL readWithFallback . parseOnly p
   where
     readWithFallback s = fromMaybe (noParse s) (readMaybe . stripAttoparsecGarbage $ s)

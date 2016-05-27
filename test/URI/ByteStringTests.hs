@@ -8,6 +8,7 @@ import qualified Blaze.ByteString.Builder as BB
 import           Data.ByteString          (ByteString)
 import qualified Data.ByteString.Char8    as B8
 import           Data.Either
+import qualified Data.Map.Strict          as M
 import           Data.Monoid
 import           Lens.Simple
 import           Test.Tasty
@@ -363,6 +364,21 @@ normalizeURITests = testGroup "normalization"
   , testCase "drop default unknown schema" $ do
       normalizeURIBS o { unoDropDefPort = True } "bogus://example.org:9999" @?=
        "bogus://example.org:9999"
+  , testCase "user-extensable port defaulting hit" $ do
+      normalizeURIBS o { unoDropDefPort = True
+                       , unoDefaultPorts = M.singleton (Scheme "ftp") (Port 21) }
+                       "ftp://example.org:21" @?=
+       "ftp://example.org"
+  , testCase "user-extensable port defaulting off" $ do
+      normalizeURIBS o { unoDropDefPort = False
+                       , unoDefaultPorts = M.singleton (Scheme "ftp") (Port 21) }
+                       "ftp://example.org:21" @?=
+       "ftp://example.org:21"
+  , testCase "user-extensable port defaulting miss" $ do
+      normalizeURIBS o { unoDropDefPort = True
+                       , unoDefaultPorts = M.singleton (Scheme "ftp") (Port 21) }
+                       "http://example.org:80" @?=
+       "http://example.org:80"
 
   , testCase "slash empty path" $ do
       normalizeURIBS o { unoSlashEmptyPath = True } "http://example.org" @?=

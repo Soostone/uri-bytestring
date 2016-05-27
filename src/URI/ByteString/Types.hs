@@ -8,6 +8,7 @@ module URI.ByteString.Types where
 
 -------------------------------------------------------------------------------
 import           Data.ByteString (ByteString)
+import qualified Data.Map.Strict as M
 import           Data.Monoid
 import           Data.Typeable
 import           Data.Word
@@ -105,17 +106,22 @@ data URIParserOptions = URIParserOptions {
 
 -------------------------------------------------------------------------------
 data URINormalizationOptions = URINormalizationOptions {
-      unoDowncaseScheme   :: Bool
-    , unoDowncaseHost     :: Bool
-    , unoDropDefPort      :: Bool
-    -- ^ If the Schema is known and the port is the default (e.g. 80 for http) it is removed.
-    , unoSlashEmptyPath   :: Bool
-    -- ^ If the path is empty, set it to /
-    , unoDropExtraSlashes :: Bool
-    -- ^ Rewrite path from /foo//bar///baz to /foo/bar/baz
-    , unoSortParameters   :: Bool
-    , unoRemoveDotSegments      :: Bool
+      unoDowncaseScheme    :: Bool
+    -- ^ hTtP -> http
+    , unoDowncaseHost      :: Bool
+    -- ^ eXaMpLe.org -> example.org
+    , unoDropDefPort       :: Bool
+    -- ^ If the scheme is known and the port is the default (e.g. 80 for http) it is removed.
+    , unoSlashEmptyPath    :: Bool
+    -- ^ If the path is empty, set it to \/
+    , unoDropExtraSlashes  :: Bool
+    -- ^ Rewrite path from \/foo\/\/bar\/\/\/baz to \/foo\/bar\/baz
+    , unoSortParameters    :: Bool
+    -- ^ Sorts parameters by parameter name
+    , unoRemoveDotSegments :: Bool
     -- ^ Remove dot segments as per <https://tools.ietf.org/html/rfc3986#section-5.2.4 RFC3986 Section 5.2.4>
+    , unoDefaultPorts      :: M.Map Scheme Port
+    -- ^ Map of known schemes to their default ports. Used when 'unoDropDefPort' is enabled.
     } deriving (Show, Eq)
 
 
