@@ -63,5 +63,13 @@ instance Arbitrary URIParserOptions where
   arbitrary = URIParserOptions <$> arbitrary
 
 
+instance Arbitrary URINormalizationOptions where
+  arbitrary = URINormalizationOptions <$> arbitrary
+                                      <*> arbitrary
+                                      <*> arbitrary
+                                      <*> arbitrary
+                                      <*> arbitrary
+                                      <*> arbitrary
+
 $(derive makeArbitrary ''SchemaError)
 $(derive makeArbitrary ''URIParseError)

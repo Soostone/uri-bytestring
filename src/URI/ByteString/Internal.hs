@@ -16,12 +16,14 @@ import qualified Data.Attoparsec.ByteString         as A
 import           Data.Bits
 import           Data.ByteString                    (ByteString)
 import qualified Data.ByteString                    as BS
-import           Data.Char                          (ord)
+import qualified Data.ByteString.Char8              as BS8
+import           Data.Char                          (ord, toLower)
 import           Data.Ix
 import           Data.List                          (delete, intersperse,
-                                                     stripPrefix, (\\))
+                                                     sortBy, stripPrefix, (\\))
 import           Data.Maybe
 import           Data.Monoid
+import           Data.Ord                           (comparing)
 import           Data.Word
 import           Text.Read                          (readMaybe)
 -------------------------------------------------------------------------------
@@ -51,6 +53,21 @@ laxURIParserOptions = URIParserOptions {
 
 
 -------------------------------------------------------------------------------
+noNormalization :: URINormalizationOptions
+noNormalization = URINormalizationOptions False False False False False False
+
+
+-------------------------------------------------------------------------------
+rfc3986Normalization :: URINormalizationOptions
+rfc3986Normalization = error "rfc3986Normalization"
+
+
+-------------------------------------------------------------------------------
+aggressiveNormalization :: URINormalizationOptions
+aggressiveNormalization = error "aggressiveNormalization"
+
+
+-------------------------------------------------------------------------------
 -- | @toAbsolute scheme ref@ converts @ref@ to an absolute URI.
 -- If @ref@ is already absolute, then it is unchanged.
 toAbsolute :: Scheme -> URIRef a -> URIRef Absolute
@@ -68,59 +85,117 @@ toAbsolute _ uri@(URI {..}) = uri
 -- >>> BB.toLazyByteString $ serializeURIRef $ URI {uriScheme = Scheme {schemeBS = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {hostBS = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {queryPairs = [("bar","baz")]}, uriFragment = Just "quux"}
 -- "http://www.example.org/foo?bar=baz#quux"
 serializeURIRef :: URIRef a -> Builder
-serializeURIRef uri@(URI {..}) = serializeURI uri
-serializeURIRef uri@(RelativeRef {..}) = serializeRelativeRef uri
+serializeURIRef = normalizeURIRef noNormalization
 
+
+-------------------------------------------------------------------------------
 -- | Like 'serializeURIRef', with conversion into a strict 'ByteString'.
 serializeURIRef' :: URIRef a -> ByteString
 serializeURIRef' = BB.toByteString . serializeURIRef
 
+
+-------------------------------------------------------------------------------
 -- | Serialize a URI into a Builder.
 serializeURI :: URIRef Absolute -> Builder
-serializeURI URI {..} = scheme <> BB.fromString ":" <> serializeRelativeRef rr
-  where
-    scheme = bs $ schemeBS uriScheme
-    rr = RelativeRef uriAuthority uriPath uriQuery uriFragment
+serializeURI = normalizeURIRef noNormalization
 {-# DEPRECATED serializeURI "Use 'serializeURIRef' instead" #-}
 
+
+-------------------------------------------------------------------------------
+normalizeURIRef :: URINormalizationOptions -> URIRef a -> Builder
+normalizeURIRef o uri@(URI {..}) = normalizeURI o uri
+normalizeURIRef o uri@(RelativeRef {}) = normalizeRelativeRef o Nothing uri
+
+
+-------------------------------------------------------------------------------
+normalizeURIRef' :: URINormalizationOptions -> URIRef a -> ByteString
+normalizeURIRef' o = BB.toByteString . normalizeURIRef o
+
+
+-------------------------------------------------------------------------------
+normalizeURI :: URINormalizationOptions -> URIRef Absolute -> Builder
+normalizeURI o@URINormalizationOptions {..} URI {..} =
+  scheme <> BB.fromString ":" <> normalizeRelativeRef o (Just uriScheme) rr
+  where
+    scheme = bs (sCase (schemeBS uriScheme))
+    sCase
+      | unoDowncaseScheme = downcaseBS
+      | otherwise = id
+    rr = RelativeRef uriAuthority uriPath uriQuery uriFragment
+
+
+-------------------------------------------------------------------------------
+normalizeRelativeRef :: URINormalizationOptions -> Maybe Scheme -> URIRef Relative -> Builder
+normalizeRelativeRef o@URINormalizationOptions {..} mScheme RelativeRef {..} =
+  authority <> path <> query <> fragment
+  where
+    path
+      | unoSlashEmptyPath && BS.null rrPath = "/"
+      | otherwise  = mconcat (intersperse (c8 '/') (map urlEncodePath segs))
+    segs = dropSegs (BS.split slash rrPath)
+    dropSegs [] = []
+    dropSegs (h:t)
+      | unoDropExtraSlashes = h:(filter (not . BS.null) t)
+      | otherwise = h:t
+    authority = maybe mempty (serializeAuthority o mScheme) rrAuthority
+    query = serializeQuery o rrQuery
+    fragment = maybe mempty (\s -> c8 '#' <> bs s) rrFragment
+
+
+-------------------------------------------------------------------------------
 -- | Like 'serializeURI', with conversion into a strict 'ByteString'.
 serializeURI' :: URIRef Absolute -> ByteString
 serializeURI' = BB.toByteString . serializeURI
 {-# DEPRECATED serializeURI' "Use 'serializeURIRef'' instead" #-}
 
+
+-------------------------------------------------------------------------------
 -- | Like 'serializeURI', but do not render scheme.
 serializeRelativeRef :: URIRef Relative -> Builder
-serializeRelativeRef RelativeRef {..} = authority <> path <> query <> fragment
-  where
-    path = mconcat $ intersperse (c8 '/') $ map urlEncodePath segs
-    segs = BS.split slash rrPath
-    authority = maybe mempty serializeAuthority rrAuthority
-    query = serializeQuery rrQuery
-    fragment = maybe mempty (\s -> c8 '#' <> bs s) rrFragment
+serializeRelativeRef = normalizeRelativeRef noNormalization Nothing
 {-# DEPRECATED serializeRelativeRef "Use 'serializeURIRef' instead" #-}
 
+
+-------------------------------------------------------------------------------
 -- | Like 'serializeRelativeRef', with conversion into a strict 'ByteString'.
 serializeRelativeRef' :: URIRef Relative -> ByteString
 serializeRelativeRef' = BB.toByteString . serializeRelativeRef
 {-# DEPRECATED serializeRelativeRef' "Use 'serializeURIRef'' instead" #-}
 
+
 -------------------------------------------------------------------------------
-serializeQuery :: Query -> Builder
-serializeQuery (Query []) = mempty
-serializeQuery (Query ps) =
-    c8 '?' <> mconcat (intersperse (c8 '&') (map serializePair ps))
+serializeQuery :: URINormalizationOptions -> Query -> Builder
+serializeQuery _ (Query []) = mempty
+serializeQuery URINormalizationOptions {..} (Query ps) =
+    c8 '?' <> mconcat (intersperse (c8 '&') (map serializePair ps'))
   where
     serializePair (k, v) = urlEncodeQuery k <> c8 '=' <> urlEncodeQuery v
+    ps'
+      | unoSortParameters = sortBy (comparing fst) ps
+      | otherwise = ps
 
 
 -------------------------------------------------------------------------------
-serializeAuthority :: Authority -> Builder
-serializeAuthority Authority {..} = BB.fromString "//" <> userinfo <> bs host <> port
+serializeAuthority :: URINormalizationOptions -> Maybe Scheme -> Authority -> Builder
+serializeAuthority URINormalizationOptions {..} mScheme Authority {..} = BB.fromString "//" <> userinfo <> bs host <> port
   where
     userinfo = maybe mempty serializeUserInfo authorityUserInfo
-    host = hostBS authorityHost
-    port = maybe mempty packPort authorityPort
+    host = hCase (hostBS authorityHost)
+    hCase
+      | unoDowncaseHost = downcaseBS
+      | otherwise = id
+    port = maybe mempty packPort effectivePort
+    effectivePort = do
+      p <- authorityPort
+      scheme <- mScheme
+      dropPort scheme p
     packPort (Port p) = c8 ':' <> BB.fromString (show p)
+    dropPort scheme
+      | unoDropDefPort = dropPort' scheme
+      | otherwise = Just
+    dropPort' (Scheme "http") (Port 80)   = Nothing
+    dropPort' (Scheme "https") (Port 443) = Nothing
+    dropPort' _ p         = Just p
 
 
 -------------------------------------------------------------------------------
@@ -793,3 +868,8 @@ urlEncodeQuery = urlEncode unreserved8
 -- | Encode a ByteString for use in the path section of a URL
 urlEncodePath :: ByteString -> Builder
 urlEncodePath = urlEncode unreservedPath8
+
+
+-------------------------------------------------------------------------------
+downcaseBS :: ByteString -> ByteString
+downcaseBS = BS8.map toLower

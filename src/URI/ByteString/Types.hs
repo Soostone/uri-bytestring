@@ -104,6 +104,20 @@ data URIParserOptions = URIParserOptions {
 
 
 -------------------------------------------------------------------------------
+data URINormalizationOptions = URINormalizationOptions {
+      unoDowncaseScheme :: Bool
+    , unoDowncaseHost :: Bool
+    , unoDropDefPort :: Bool
+    -- ^ If the Schema is known and the port is the default (e.g. 80 for http) it is removed.
+    , unoSlashEmptyPath :: Bool
+    -- ^ If the path is empty, set it to /
+    , unoDropExtraSlashes :: Bool
+    -- ^ Rewrite path from /foo//bar///baz to /foo/bar/baz
+    , unoSortParameters :: Bool
+    } deriving (Show, Eq)
+
+
+-------------------------------------------------------------------------------
 -- | URI Parser Types
 -------------------------------------------------------------------------------
 

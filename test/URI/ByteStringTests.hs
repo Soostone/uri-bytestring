@@ -7,6 +7,7 @@ module URI.ByteStringTests (tests) where
 import qualified Blaze.ByteString.Builder as BB
 import           Data.ByteString          (ByteString)
 import qualified Data.ByteString.Char8    as B8
+import           Data.Either
 import           Data.Monoid
 import           Lens.Simple
 import           Test.Tasty
@@ -26,6 +27,7 @@ tests = testGroup "URI.Bytestring"
   , uriParseErrorInstancesTests
   , lensTests
   , serializeURITests
+  , normalizeURITests
   ]
 
 
@@ -332,3 +334,52 @@ serializeURITests = testGroup "serializeURIRef"
        let res = BB.toLazyByteString (serializeURIRef uri)
        res @?= "http://www.example.org/weird%20path"
   ]
+
+
+-------------------------------------------------------------------------------
+normalizeURITests :: TestTree
+normalizeURITests = testGroup "normalization"
+  [
+    testCase "downcase schema" $ do
+      normalizeURIBS o { unoDowncaseScheme = True } "hTtP://example.org" @?=
+       "http://example.org"
+
+  , testCase "downcase host" $ do
+      normalizeURIBS o { unoDowncaseHost = True } "http://ExAmPlE.org" @?=
+       "http://example.org"
+
+  , testCase "drop default port http" $ do
+      normalizeURIBS o { unoDropDefPort = True } "http://example.org:80" @?=
+       "http://example.org"
+  , testCase "drop default port https" $ do
+      normalizeURIBS o { unoDropDefPort = True } "https://example.org:443" @?=
+       "https://example.org"
+  , testCase "drop default port no port" $ do
+      normalizeURIBS o { unoDropDefPort = True } "http://example.org" @?=
+       "http://example.org"
+  , testCase "drop default port nondefault" $ do
+      normalizeURIBS o { unoDropDefPort = True } "http://example.org:8000" @?=
+       "http://example.org:8000"
+  , testCase "drop default unknown schema" $ do
+      normalizeURIBS o { unoDropDefPort = True } "bogus://example.org:9999" @?=
+       "bogus://example.org:9999"
+
+  , testCase "slash empty path" $ do
+      normalizeURIBS o { unoSlashEmptyPath = True } "http://example.org" @?=
+        "http://example.org/"
+  , testCase "slash empty path with nonempty path" $ do
+      normalizeURIBS o { unoSlashEmptyPath = True } "http://example.org/foo/bar" @?=
+        "http://example.org/foo/bar"
+
+  , testCase "drop redundant slashes" $ do --TODO set redundant slashes
+      normalizeURIBS o { unoDropExtraSlashes = True } "http://example.org/foo//bar///baz" @?=
+        "http://example.org/foo/bar/baz"
+        
+  , testCase "sort params" $ do --TODO set redundant slashes
+      normalizeURIBS o { unoSortParameters = True } "http://example.org/foo?zulu=1&charlie=&alpha=1" @?=
+        "http://example.org/foo?alpha=1&charlie=&zulu=1"
+  ]
+  where
+    o = noNormalization
+    normalizeURIBS opts bs = let Right x = parseURI laxURIParserOptions bs
+                             in normalizeURIRef' opts x

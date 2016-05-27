@@ -39,6 +39,10 @@ module URI.ByteString
     , URIParserOptions(..)
     , strictURIParserOptions
     , laxURIParserOptions
+    , URINormalizationOptions(..)
+    , noNormalization
+    , rfc3986Normalization
+    , aggressiveNormalization
     -- * Operations
     , toAbsolute
     -- * Parsing
@@ -49,12 +53,16 @@ module URI.ByteString
     -- * Serializing
     , serializeURIRef
     , serializeURIRef'
+    -- ** Normalized Serialization
+    , normalizeURIRef
+    , normalizeURIRef'
     -- * Low level utility functions
     , urlDecode
     , urlDecodeQuery
     , urlEncodeQuery
     , urlEncodePath
     , urlEncode
+    -- ** RFC3986 Section 6.2 Normalization
     -- * Lenses
     -- ** Lenses over 'Scheme'
     , schemeBSL
