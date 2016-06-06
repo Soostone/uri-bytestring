@@ -1,3 +1,9 @@
+0.2.1.0
+* Widen dependency on base.
+
+0.2.0.0
+* Introduce URIRef, a GADT representation of absolute and relative URIs.
+
 0.1.9.2
 * Fix bug wher trailing ampersand in the query section would not parse.
 
