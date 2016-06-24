@@ -272,10 +272,10 @@ serializeAuthority URINormalizationOptions {..} mScheme Authority {..} = BB.from
     port = maybe mempty packPort effectivePort
     effectivePort = do
       p <- authorityPort
-      scheme <- mScheme
-      dropPort scheme p
+      dropPort mScheme p
     packPort (Port p) = c8 ':' <> BB.fromString (show p)
-    dropPort scheme
+    dropPort Nothing = Just
+    dropPort (Just scheme)
       | unoDropDefPort = dropPort' scheme
       | otherwise = Just
     dropPort' s p

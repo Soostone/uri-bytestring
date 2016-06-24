@@ -320,21 +320,31 @@ serializeURITests = testGroup "serializeURIRef"
     testCase "renders userinfo correctly" $ do
        let ui = UserInfo "user" "pass"
        let uri = URI (Scheme "http")
-                 (Just (Authority (Just ui) (Host "www.example.org") Nothing))
+                 (Just (Authority (Just ui) (Host "www.example.org") (Just port)))
                  "/"
                  (Query [("foo", "bar")])
                  (Just "somefragment")
        let res = BB.toLazyByteString (serializeURIRef uri)
-       res @?= "http://user:pass@www.example.org/?foo=bar#somefragment"
+       res @?= "http://user:pass@www.example.org:123/?foo=bar#somefragment"
   , testCase "encodes decoded paths" $ do
        let uri = URI (Scheme "http")
-                 (Just (Authority Nothing (Host "www.example.org") Nothing))
+                 (Just (Authority Nothing (Host "www.example.org") (Just port)))
                  "/weird path"
                  (Query [])
                  Nothing
        let res = BB.toLazyByteString (serializeURIRef uri)
-       res @?= "http://www.example.org/weird%20path"
+       res @?= "http://www.example.org:123/weird%20path"
+  , testCase "encodes relative refs" $ do
+      let ui = UserInfo "user" "pass"
+      let uri = RelativeRef (Just (Authority (Just ui) (Host "www.example.org") (Just port)))
+                "/"
+                (Query [("foo", "bar")])
+                (Just "somefragment")
+      let res = BB.toLazyByteString (serializeURIRef uri)
+      res @?= "//user:pass@www.example.org:123/?foo=bar#somefragment"
   ]
+  where
+    port = Port 123
 
 
 -------------------------------------------------------------------------------
