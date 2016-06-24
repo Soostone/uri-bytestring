@@ -64,7 +64,6 @@ module URI.ByteString
     , urlEncodeQuery
     , urlEncodePath
     , urlEncode
-    -- ** RFC3986 Section 6.2 Normalization
     -- * Lenses
     -- ** Lenses over 'Scheme'
     , schemeBSL
