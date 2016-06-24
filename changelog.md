@@ -1,3 +1,6 @@
+0.2.1.2
+* Fixed bug introduced at 0.2.1.1 where RelativeRefs would fail to serialize their port numbers.
+
 0.2.1.1
 * Add URI normalization features.
 
