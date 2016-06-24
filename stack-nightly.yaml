@@ -1,0 +1,11 @@
+resolver: nightly-2016-06-21
+packages:
+- '.'
+extra-deps:
+- lens-simple-0.1.0.9
+- lens-family-1.2.1
+- lens-family-core-1.2.1
+flags:
+  uri-bytestring:
+    lib-Werror: true
+extra-package-dbs: []

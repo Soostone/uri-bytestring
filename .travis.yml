@@ -19,7 +19,7 @@ env:
 - ARGS="--resolver=lts-5"
 - ARGS="--resolver=lts-6"
 # Builds OK with ghc 8 but test dependencies don't. Revisit this later.
-# - ARGS="--resolver=nightly"
+- ARGS="--stack-yaml=stack-nightly.yaml"
 
 before_install:
 # Download and unpack the stack executable
