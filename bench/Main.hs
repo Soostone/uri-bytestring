@@ -46,9 +46,9 @@ main = defaultMain
   , bgroup "serializing"
     [
       bench "URI.ByteString.serializeURIRef on URI" $ nf (toLazyByteString . serializeURIRef) exampleURI
-    , bench "URI.ByteString.serializeURIRef on URI (unparsed query string)" $ nf (toLazyByteString . serializeURIRef) exampleURI'
+    , bench "URI.ByteString.serializeURIRef on URI (unparsed query string)" $ nf (toLazyByteString . serializeURIRef) $ exampleURI { uriQuery = QueryString "params=youbetcha" }
     , bench "URI.ByteString.serializeURIRef on relative ref" $ nf (toLazyByteString . serializeURIRef) exampleRelativeRef
-    , bench "URI.ByteString.serializeURIRef on relative ref (unparsed query string)" $ nf (toLazyByteString . serializeURIRef) exampleRelativeRef'
+    , bench "URI.ByteString.serializeURIRef on relative ref (unparsed query string)" $ nf (toLazyByteString . serializeURIRef) $ exampleRelativeRef { rrQuery = QueryString "params=youbetcha" }
     ]
   ]
 
@@ -74,19 +74,6 @@ exampleURI = URI {
     , uriFragment = Nothing
     }
 
-exampleURI' :: URI
-exampleURI' = URI {
-      uriScheme = Scheme "http"
-    , uriAuthority = Just Authority {
-          authorityUserInfo = Nothing
-        , authorityHost = Host "google.com"
-        , authorityPort = Nothing
-        }
-    , uriPath = "/example"
-    , uriQuery = QueryString "params=youbetcha"
-    , uriFragment = Nothing
-    }
-
 
 exampleRelativeRef :: RelativeRef
 exampleRelativeRef = RelativeRef {
@@ -100,14 +87,3 @@ exampleRelativeRef = RelativeRef {
     , rrFragment = Nothing
     }
 
-exampleRelativeRef' :: RelativeRef
-exampleRelativeRef' = RelativeRef {
-      rrAuthority = Just Authority {
-          authorityUserInfo = Nothing
-        , authorityHost = Host "google.com"
-        , authorityPort = Nothing
-        }
-    , rrPath = "/example"
-    , rrQuery = QueryString "params=youbetcha"
-    , rrFragment = Nothing
-    }
