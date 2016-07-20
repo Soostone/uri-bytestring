@@ -52,9 +52,15 @@ data UserInfo = UserInfo {
 
 
 -------------------------------------------------------------------------------
-newtype Query = Query { queryPairs :: [(ByteString, ByteString)] }
-              deriving (Show, Eq, Monoid, Generic, Typeable, Ord)
+data Query
+    = Query { queryPairs :: [(ByteString, ByteString)] }
+    | QueryString { queryString :: ByteString }
+    | NoQueryString
+    deriving (Show, Eq, Generic, Typeable, Ord)
 
+instance Monoid Query where
+    mempty = Query []
+    (Query a) `mappend` (Query b) = Query $ mappend a b
 
 -------------------------------------------------------------------------------
 -- | Note: URI fragment does not include the #
@@ -101,6 +107,7 @@ type RelativeRef = URIRef Relative
 -- "strictURIParserOptions" or "laxURIParserOptions"
 data URIParserOptions = URIParserOptions {
       upoValidQueryChar :: Word8 -> Bool
+    , upoParseQuery     :: Bool
     }
 
 

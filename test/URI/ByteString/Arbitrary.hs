@@ -60,7 +60,7 @@ instance Arbitrary Query where
 
 
 instance Arbitrary URIParserOptions where
-  arbitrary = URIParserOptions <$> arbitrary
+  arbitrary = URIParserOptions <$> arbitrary <*> arbitrary
 
 
 instance Arbitrary URINormalizationOptions where

@@ -38,13 +38,17 @@ main = defaultMain
         bench "Network.URI.parseURI" $ nf NU.parseURI exampleURIS
       , bench "URI.ByteString.parseURI strict" $ nf (parseURI strictURIParserOptions) exampleURIS
       , bench "URI.ByteString.parseURI lax" $ nf (parseURI laxURIParserOptions) exampleURIS
+      , bench "URI.ByteString.parseURI strict (unparsed query string)" $ nf (parseURI strictURIParserOptions') exampleURIS
+      , bench "URI.ByteString.parseURI lax (unparsed query string)" $ nf (parseURI laxURIParserOptions') exampleURIS
       , bench "URI.ByteString.parseRelativeRef strict" $ nf (parseRelativeRef strictURIParserOptions) exampleRelativeRefS
       , bench "URI.ByteString.parseRelativeRef lax" $ nf (parseRelativeRef laxURIParserOptions) exampleRelativeRefS
       ]
   , bgroup "serializing"
     [
       bench "URI.ByteString.serializeURIRef on URI" $ nf (toLazyByteString . serializeURIRef) exampleURI
+    , bench "URI.ByteString.serializeURIRef on URI (unparsed query string)" $ nf (toLazyByteString . serializeURIRef) exampleURI'
     , bench "URI.ByteString.serializeURIRef on relative ref" $ nf (toLazyByteString . serializeURIRef) exampleRelativeRef
+    , bench "URI.ByteString.serializeURIRef on relative ref (unparsed query string)" $ nf (toLazyByteString . serializeURIRef) exampleRelativeRef'
     ]
   ]
 
@@ -70,6 +74,19 @@ exampleURI = URI {
     , uriFragment = Nothing
     }
 
+exampleURI' :: URI
+exampleURI' = URI {
+      uriScheme = Scheme "http"
+    , uriAuthority = Just Authority {
+          authorityUserInfo = Nothing
+        , authorityHost = Host "google.com"
+        , authorityPort = Nothing
+        }
+    , uriPath = "/example"
+    , uriQuery = QueryString "params=youbetcha"
+    , uriFragment = Nothing
+    }
+
 
 exampleRelativeRef :: RelativeRef
 exampleRelativeRef = RelativeRef {
@@ -80,5 +97,17 @@ exampleRelativeRef = RelativeRef {
         }
     , rrPath = "/example"
     , rrQuery = Query [("params", "youbetcha")]
+    , rrFragment = Nothing
+    }
+
+exampleRelativeRef' :: RelativeRef
+exampleRelativeRef' = RelativeRef {
+      rrAuthority = Just Authority {
+          authorityUserInfo = Nothing
+        , authorityHost = Host "google.com"
+        , authorityPort = Nothing
+        }
+    , rrPath = "/example"
+    , rrQuery = QueryString "params=youbetcha"
     , rrFragment = Nothing
     }

@@ -83,6 +83,13 @@ parseUriTests = testGroup "parseUri"
               ]}
           , uriFragment = Nothing
           }
+  , testParsesQueryString "http://www.google.com:80/aclk?sa=l&ai=CChPOVvnoU8fMDI_QsQeE4oGwDf664-EF7sq01HqV1MMFCAAQAigDUO3VhpcDYMnGqYvApNgPoAGq3vbiA8gBAaoEKE_QQwekDUoMeW9IQghV4HRuzL_l-7vVjlML559kix6XOcC1c4Tb9xeAB76hiR2QBwGoB6a-Gw&sig=AOD64_3Ulyu0DcDsc1AamOIxq63RF9u4zQ&rct=j&q=&ved=0CCUQ0Qw&adurl=http://www.aruba.com/where-to-stay/hotels-and-resorts%3Ftid%3D122"
+      URI { uriScheme = Scheme {schemeBS = "http"}
+          , uriAuthority = Just Authority {authorityUserInfo = Nothing, authorityHost = Host {hostBS = "www.google.com"}, authorityPort = Just (Port 80)}
+          , uriPath = "/aclk"
+          , uriQuery = QueryString {queryString = "sa=l&ai=CChPOVvnoU8fMDI_QsQeE4oGwDf664-EF7sq01HqV1MMFCAAQAigDUO3VhpcDYMnGqYvApNgPoAGq3vbiA8gBAaoEKE_QQwekDUoMeW9IQghV4HRuzL_l-7vVjlML559kix6XOcC1c4Tb9xeAB76hiR2QBwGoB6a-Gw&sig=AOD64_3Ulyu0DcDsc1AamOIxq63RF9u4zQ&rct=j&q=&ved=0CCUQ0Qw&adurl=http://www.aruba.com/where-to-stay/hotels-and-resorts%3Ftid%3D122"}
+          , uriFragment = Nothing
+          }
 
   , testParseFailure "$$$$://www.example.org/" (MalformedScheme NonAlphaLeading)
   , testParses "http://www.example.org/foo#bar" $
@@ -90,6 +97,12 @@ parseUriTests = testGroup "parseUri"
           (Just (Authority Nothing (Host "www.example.org") Nothing))
           "/foo"
           mempty
+          (Just "bar")
+  , testParsesQueryString "http://www.example.org/foo#bar" $
+      URI (Scheme "http")
+          (Just (Authority Nothing (Host "www.example.org") Nothing))
+          "/foo"
+          NoQueryString
           (Just "bar")
   , testParseFailure "http://www.example.org/foo#bar#baz" MalformedFragment
   , testParseFailure "https://www.example.org?listParam[]=foo,bar" MalformedQuery
@@ -106,6 +119,12 @@ parseUriTests = testGroup "parseUri"
           ""
           (Query [("listParam[]", "foo,bar")])
           Nothing
+  , testParsesQueryString "https://www.example.org?listParam%5B%5D=foo,bar" $
+      URI (Scheme "https")
+          (Just (Authority Nothing (Host "www.example.org") Nothing))
+          ""
+          (QueryString "listParam%5B%5D=foo,bar")
+          Nothing
 
   , testParses "https://www.example.org#only-fragment" $
       URI (Scheme "https")
@@ -113,6 +132,13 @@ parseUriTests = testGroup "parseUri"
           ""
           (Query [])
           (Just "only-fragment")
+  , testParsesQueryString "https://www.example.org#only-fragment" $
+      URI (Scheme "https")
+          (Just (Authority Nothing (Host "www.example.org") Nothing))
+          ""
+          (NoQueryString)
+          (Just "only-fragment")
+
   ,  testParses "https://www.example.org/weird%20path" $
        URI (Scheme "https")
            (Just (Authority Nothing (Host "www.example.org") Nothing))
@@ -241,6 +267,11 @@ lensTests = testGroup "lenses"
 -------------------------------------------------------------------------------
 testParses :: ByteString -> URI -> TestTree
 testParses = testParses' strictURIParserOptions
+
+
+-------------------------------------------------------------------------------
+testParsesQueryString :: ByteString -> URI -> TestTree
+testParsesQueryString = testParses' strictURIParserOptions'
 
 
 -------------------------------------------------------------------------------

@@ -38,7 +38,9 @@ module URI.ByteString
     , URIParseError(..)
     , URIParserOptions(..)
     , strictURIParserOptions
+    , strictURIParserOptions'
     , laxURIParserOptions
+    , laxURIParserOptions'
     , URINormalizationOptions(..)
     , noNormalization
     , rfc3986Normalization
@@ -52,6 +54,7 @@ module URI.ByteString
     , parseRelativeRef
     , uriParser
     , relativeRefParser
+    , parseQueryString
     -- * Serializing
     , serializeURIRef
     , serializeURIRef'
