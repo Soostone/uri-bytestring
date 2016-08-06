@@ -620,13 +620,13 @@ validForQueryLax = notInClass "&#"
 -------------------------------------------------------------------------------
 -- | Only parses a fragment if the # signifiier is there
 mFragmentParser :: URIParser (Maybe ByteString)
-mFragmentParser = word8' hash `thenJust` fragmentParser
+mFragmentParser = mParse $ word8' hash *> fragmentParser
 
 
 -------------------------------------------------------------------------------
 -- | The final piece of a uri, e.g. #fragment, minus the #.
 fragmentParser :: URIParser ByteString
-fragmentParser = A.takeWhile1 validFragmentWord `orFailWith` MalformedFragment
+fragmentParser = Parser' $ A.takeWhile validFragmentWord
   where
     validFragmentWord = inClass ('?':'/':pchar)
 
