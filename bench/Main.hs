@@ -38,13 +38,17 @@ main = defaultMain
         bench "Network.URI.parseURI" $ nf NU.parseURI exampleURIS
       , bench "URI.ByteString.parseURI strict" $ nf (parseURI strictURIParserOptions) exampleURIS
       , bench "URI.ByteString.parseURI lax" $ nf (parseURI laxURIParserOptions) exampleURIS
+      , bench "URI.ByteString.parseURI strict (unparsed query string)" $ nf (parseURI strictURIParserOptions') exampleURIS
+      , bench "URI.ByteString.parseURI lax (unparsed query string)" $ nf (parseURI laxURIParserOptions') exampleURIS
       , bench "URI.ByteString.parseRelativeRef strict" $ nf (parseRelativeRef strictURIParserOptions) exampleRelativeRefS
       , bench "URI.ByteString.parseRelativeRef lax" $ nf (parseRelativeRef laxURIParserOptions) exampleRelativeRefS
       ]
   , bgroup "serializing"
     [
       bench "URI.ByteString.serializeURIRef on URI" $ nf (toLazyByteString . serializeURIRef) exampleURI
+    , bench "URI.ByteString.serializeURIRef on URI (unparsed query string)" $ nf (toLazyByteString . serializeURIRef) $ exampleURI { uriQuery = QueryString "params=youbetcha" }
     , bench "URI.ByteString.serializeURIRef on relative ref" $ nf (toLazyByteString . serializeURIRef) exampleRelativeRef
+    , bench "URI.ByteString.serializeURIRef on relative ref (unparsed query string)" $ nf (toLazyByteString . serializeURIRef) $ exampleRelativeRef { rrQuery = QueryString "params=youbetcha" }
     ]
   ]
 
@@ -82,3 +86,4 @@ exampleRelativeRef = RelativeRef {
     , rrQuery = Query [("params", "youbetcha")]
     , rrFragment = Nothing
     }
+

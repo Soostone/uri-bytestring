@@ -52,9 +52,24 @@ data UserInfo = UserInfo {
 
 
 -------------------------------------------------------------------------------
-newtype Query = Query { queryPairs :: [(ByteString, ByteString)] }
-              deriving (Show, Eq, Monoid, Generic, Typeable, Ord)
+data Query
+    = Query { queryPairs :: [(ByteString, ByteString)] }
+    | QueryString { queryString :: ByteString }
+    | NoQueryString
+    deriving (Show, Eq, Generic, Typeable, Ord)
 
+-- The objective here is that Query still acts like a Monoid, especially for
+-- the Query constructor. The rest tries to meet the project goal of zero
+-- compiler warnings. The handling of NoQueryString (behaving like mempty)
+-- seems reasonable. However, mixing Query and QueryString should be considered
+-- undefined.
+instance Monoid Query where
+    mempty = Query []
+    (Query a) `mappend` (Query b) = Query $ mappend a b
+    (QueryString a) `mappend` (QueryString b) = QueryString $ mappend a b
+    NoQueryString `mappend` b = b
+    a `mappend` NoQueryString = a
+    a `mappend` _ = a
 
 -------------------------------------------------------------------------------
 -- | Note: URI fragment does not include the #
@@ -101,6 +116,7 @@ type RelativeRef = URIRef Relative
 -- "strictURIParserOptions" or "laxURIParserOptions"
 data URIParserOptions = URIParserOptions {
       upoValidQueryChar :: Word8 -> Bool
+    , upoParseQuery     :: Bool
     }
 
 
