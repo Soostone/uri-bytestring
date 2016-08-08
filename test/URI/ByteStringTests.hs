@@ -91,6 +91,12 @@ parseUriTests = testGroup "parseUri"
           "/foo"
           mempty
           (Just "bar")
+  , testParses "http://www.example.org/foo#" $
+      URI (Scheme "http")
+          (Just (Authority Nothing (Host "www.example.org") Nothing))
+          "/foo"
+          mempty
+          (Just "")
   , testParseFailure "http://www.example.org/foo#bar#baz" MalformedFragment
   , testParseFailure "https://www.example.org?listParam[]=foo,bar" MalformedQuery
   , testParsesLax "https://www.example.org?listParam[]=foo,bar" $
