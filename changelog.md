@@ -1,3 +1,7 @@
+0.2.2.0
+* Internally use attoparsec's numeric parser. Raise lower bounds on attoparsec.
+* Allow blank fragments.
+
 0.2.1.2
 * Fixed bug introduced at 0.2.1.1 where RelativeRefs would fail to serialize their port numbers.
 
