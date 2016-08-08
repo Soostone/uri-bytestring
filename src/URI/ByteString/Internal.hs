@@ -13,6 +13,7 @@ import           Control.Applicative
 import           Control.Monad
 import           Data.Attoparsec.ByteString
 import qualified Data.Attoparsec.ByteString         as A
+import qualified Data.Attoparsec.ByteString.Char8   as A ( decimal )
 import           Data.Bits
 import           Data.ByteString                    (ByteString)
 import qualified Data.ByteString                    as BS
@@ -512,12 +513,12 @@ ipV4Parser = mconcat <$> sequence [ decOctet
                                   , dot
                                   , decOctet]
   where
+    decOctet :: Parser ByteString
     decOctet = do
-      s <- A.takeWhile1 isDigit
+      (s,num) <- A.match A.decimal
       let len = BS.length s
-      guard $ len > 0 && len <= 3
-      let num = bsToNum s
-      guard $ num >= 1 && num <= 255
+      guard $ len <= 3
+      guard $ num >= (1 :: Int) && num <= 255
       return s
     dot = string "."
 
@@ -540,7 +541,7 @@ mPortParser = word8' colon `thenJust` portParser
 -- | Parses port number from the hostname. Colon separator must be
 -- handled elsewhere.
 portParser :: URIParser Port
-portParser = (Port . bsToNum <$> A.takeWhile1 isDigit) `orFailWith` MalformedPort
+portParser = (Port <$> A.decimal) `orFailWith` MalformedPort
 
 
 -------------------------------------------------------------------------------
@@ -754,17 +755,6 @@ slash = 47
 -------------------------------------------------------------------------------
 -- | ByteString Utilities
 -------------------------------------------------------------------------------
-
--- FIXME: theres probably a much better way to do this
-
--------------------------------------------------------------------------------
--- | Convert a bytestring into an int representation. Assumes the
--- entire string is comprised of 0-9 digits.
-bsToNum :: ByteString -> Int
-bsToNum s = sum $ zipWith (*) (reverse ints) [10 ^ x | x <- [0..] :: [Int]]
-  where
-    w2i w = fromEnum $ w - 48
-    ints  = map w2i . BS.unpack $ s
 
 
 -------------------------------------------------------------------------------
