@@ -1,3 +1,6 @@
+0.2.2.1
+* Drop dependency on derive in tests.
+
 0.2.2.0
 * Internally use attoparsec's numeric parser. Raise lower bounds on attoparsec.
 * Allow blank fragments.
