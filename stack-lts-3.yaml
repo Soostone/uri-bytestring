@@ -1,9 +1,7 @@
-resolver: lts-2.12
+resolver: lts-3.22
 packages:
   - '.'
 extra-deps:
-  - lens-simple-0.1.0.8
-  - lens-family-1.2.0
   - generics-sop-0.2.2.0
 flags:
   uri-bytestring:
