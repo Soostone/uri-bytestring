@@ -33,6 +33,7 @@ library
     URI.ByteString.Lens
     URI.ByteString.Types
     URI.ByteString.Internal
+    URI.ByteString.QQ
 
   build-depends:
 
@@ -40,6 +41,8 @@ library
     , base             >= 4.6     && < 4.10
     , bytestring       >= 0.9.1   && < 0.11
     , blaze-builder    >= 0.3.0.0 && < 0.5
+    , template-haskell >= 2.11    && < 2.12
+    , th-lift-instances >= 0.1.8  && < 0.2
     , containers
 
   hs-source-dirs:      src

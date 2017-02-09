@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DeriveLift                 #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE StandaloneDeriving         #-}
@@ -13,6 +14,8 @@ import           Data.Monoid
 import           Data.Typeable
 import           Data.Word
 import           GHC.Generics
+import           Instances.TH.Lift()
+import           Language.Haskell.TH.Syntax
 -------------------------------------------------------------------------------
 import           Prelude
 -------------------------------------------------------------------------------
@@ -21,19 +24,19 @@ import           Prelude
 -- | Required first component to referring to a specification for the
 -- remainder of the URI's components, e.g. "http" or "https"
 newtype Scheme = Scheme { schemeBS :: ByteString }
-  deriving (Show, Eq, Generic, Typeable, Ord)
+  deriving (Show, Eq, Generic, Typeable, Ord, Lift)
 
 
 -------------------------------------------------------------------------------
 newtype Host = Host { hostBS :: ByteString }
-  deriving (Show, Eq, Generic, Typeable, Ord)
+  deriving (Show, Eq, Generic, Typeable, Ord, Lift)
 
 
 -------------------------------------------------------------------------------
 -- | While some libraries have chosen to limit this to a Word16, the
 -- spec only specifies that the string be comprised of digits.
 newtype Port = Port { portNumber :: Int }
-  deriving (Show, Eq, Generic, Typeable, Ord)
+  deriving (Show, Eq, Generic, Typeable, Ord, Lift)
 
 
 -------------------------------------------------------------------------------
@@ -41,19 +44,19 @@ data Authority = Authority {
       authorityUserInfo :: Maybe UserInfo
     , authorityHost     :: Host
     , authorityPort     :: Maybe Port
-    } deriving (Show, Eq, Generic, Typeable, Ord)
+    } deriving (Show, Eq, Generic, Typeable, Ord, Lift)
 
 
 -------------------------------------------------------------------------------
 data UserInfo = UserInfo {
       uiUsername :: ByteString
     , uiPassword :: ByteString
-    } deriving (Show, Eq, Generic, Typeable, Ord)
+    } deriving (Show, Eq, Generic, Typeable, Ord, Lift)
 
 
 -------------------------------------------------------------------------------
 newtype Query = Query { queryPairs :: [(ByteString, ByteString)] }
-              deriving (Show, Eq, Monoid, Generic, Typeable, Ord)
+              deriving (Show, Eq, Monoid, Generic, Typeable, Ord, Lift)
 
 
 -------------------------------------------------------------------------------
@@ -75,6 +78,7 @@ deriving instance Show (URIRef a)
 deriving instance Eq (URIRef a)
 -- deriving instance Generic (URIRef a)
 deriving instance Ord (URIRef a)
+deriving instance Lift (URIRef a)
 
 #ifdef WITH_TYPEABLE
 deriving instance Typeable URIRef
