@@ -29,11 +29,11 @@ flag lib-Werror
 library
   exposed-modules:
     URI.ByteString
+    URI.ByteString.QQ
   other-modules:
     URI.ByteString.Lens
     URI.ByteString.Types
     URI.ByteString.Internal
-    URI.ByteString.QQ
 
   build-depends:
 
@@ -41,7 +41,7 @@ library
     , base             >= 4.6     && < 4.10
     , bytestring       >= 0.9.1   && < 0.11
     , blaze-builder    >= 0.3.0.0 && < 0.5
-    , template-haskell >= 2.11    && < 2.12
+    , template-haskell >= 2.9     && < 2.12
     , th-lift-instances >= 0.1.8  && < 0.2
     , containers
 
@@ -50,6 +50,11 @@ library
 
   if impl(ghc >= 7.8)
     cpp-options: -DWITH_TYPEABLE
+
+  if impl(ghc < 8)
+    cpp-options: -DLIFT_COMPAT
+    build-depends:
+      th-lift >= 0.7.5 && < 0.8
 
   if flag(lib-Werror)
     ghc-options: -Werror
@@ -62,6 +67,7 @@ test-suite test
   other-modules:
     URI.ByteString.Arbitrary
     URI.ByteStringTests
+    URI.ByteStringQQTests
   hs-source-dirs: test
   build-depends:
       uri-bytestring

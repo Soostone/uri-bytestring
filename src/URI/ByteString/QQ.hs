@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell    #-}
-{-# LANGUAGE DeriveLift         #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE GADTs              #-}
+{-# LANGUAGE CPP                #-}
 
 module URI.ByteString.QQ where
 

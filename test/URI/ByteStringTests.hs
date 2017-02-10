@@ -20,6 +20,7 @@ import           Prelude
 import           URI.ByteString
 import           URI.ByteString.Arbitrary ()
 -------------------------------------------------------------------------------
+import           URI.ByteStringQQTests    ()
 
 tests :: TestTree
 tests = testGroup "URI.Bytestring"
