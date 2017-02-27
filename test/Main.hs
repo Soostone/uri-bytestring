@@ -1,9 +1,10 @@
 module Main (main) where
 
 -------------------------------------------------------------------------------
-import Test.Tasty
+import           Test.Tasty
 -------------------------------------------------------------------------------
-import URI.ByteStringTests
+import qualified URI.ByteStringTests
+import qualified URI.ByteStringQQTests
 -------------------------------------------------------------------------------
 
 
@@ -14,4 +15,5 @@ testSuite :: TestTree
 testSuite = testGroup "uri-bytestring"
   [
     URI.ByteStringTests.tests
+  , URI.ByteStringQQTests.tests
   ]
