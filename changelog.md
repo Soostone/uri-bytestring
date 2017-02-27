@@ -1,3 +1,6 @@
+0.2.3.1
+* Add `relativeRef` quasi-quoter.
+
 0.2.3.0
 * Add `URI.ByteString.QQ` and the `uri` quasiquoter to be able to express statically known to be valid URIs, e.g. `example = [uri|http://www.example.com|]`. Thanks to [reactormonk](https://github.com/reactormonk).
 
