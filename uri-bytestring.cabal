@@ -16,6 +16,7 @@ bug-reports:         https://github.com/Soostone/uri-bytestring/issues
 Tested-With:         GHC == 7.6.3
                    , GHC == 7.8.4
                    , GHC == 7.10.1
+                   , GHC == 8.0.2
 extra-source-files:
   README.md
   CONTRIBUTING.md
