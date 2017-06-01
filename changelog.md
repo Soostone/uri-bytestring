@@ -1,3 +1,6 @@
+0.2.3.2
+* Broaden dep on base.
+
 0.2.3.1
 * Add `relativeRef` quasi-quoter.
 
