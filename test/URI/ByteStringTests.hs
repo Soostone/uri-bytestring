@@ -4,13 +4,15 @@
 module URI.ByteStringTests (tests) where
 
 -------------------------------------------------------------------------------
+import           Control.Applicative      (Const (..))
 import qualified Blaze.ByteString.Builder as BB
 import           Data.ByteString          (ByteString)
 import qualified Data.ByteString.Char8    as B8
 import           Data.Either
+import           Data.Function.Compat     ((&))
+import           Data.Functor.Identity    (Identity (..))
 import qualified Data.Map.Strict          as M
 import           Data.Monoid
-import           Lens.Simple
 import           Test.Tasty
 import           Test.Tasty.HUnit
 import           Test.Tasty.QuickCheck
@@ -21,6 +23,15 @@ import           URI.ByteString
 import           URI.ByteString.Arbitrary ()
 -------------------------------------------------------------------------------
 import           URI.ByteStringQQTests    ()
+
+infixr 4 .~
+(.~) :: ((a -> Identity b) -> s -> Identity t) -> b -> s -> t
+(.~) l b s = runIdentity (l (const (Identity b)) s)
+
+infixl ^.
+(^.) :: s -> ((a -> Const a a) -> s -> Const a s) -> a
+s ^. l = getConst (l Const s)
+
 
 tests :: TestTree
 tests = testGroup "URI.Bytestring"
