@@ -804,7 +804,7 @@ mParse p = option Nothing (Just <$> p)
 -- | If the first parser succeeds, discard the result and use the
 -- second parser (which may fail). If the first parser fails, return
 -- Nothing. This is used to check a benign precondition that indicates
--- the presence of a parsible token, i.e. ? preceeding a query.
+-- the presence of a parsible token, i.e. ? preceding a query.
 thenJust :: Parser' e a -> Parser' e b -> Parser' e (Maybe b)
 thenJust p1 p2 = p1 *> (Just <$> p2) <|> pure Nothing
 
