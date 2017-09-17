@@ -11,6 +11,7 @@ import qualified Blaze.ByteString.Builder           as BB
 import qualified Blaze.ByteString.Builder.Char.Utf8 as BB
 import           Control.Applicative
 import           Control.Monad
+import           Control.Monad.Fail
 import           Data.Attoparsec.ByteString
 import qualified Data.Attoparsec.ByteString         as A
 import qualified Data.Attoparsec.ByteString.Char8   as A ( decimal )
@@ -791,6 +792,7 @@ newtype Parser' e a = Parser' { unParser' :: Parser a}
                              , Alternative
                              , Monad
                              , MonadPlus
+                             , MonadFail
                              , Monoid)
 
 
