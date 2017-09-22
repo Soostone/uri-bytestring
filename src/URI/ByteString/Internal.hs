@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
@@ -792,8 +793,15 @@ newtype Parser' e a = Parser' { unParser' :: Parser a}
                              , Alternative
                              , Monad
                              , MonadPlus
-                             , F.MonadFail
                              , Monoid)
+
+
+instance F.MonadFail (Parser' e) where
+#if MIN_VERSION_attoparsec(0,13,1)
+  fail e = Parser' (F.fail e)
+#else
+  fail e = Parser' (fail e)
+#endif
 
 
 -------------------------------------------------------------------------------
