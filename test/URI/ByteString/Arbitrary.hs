@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -9,6 +10,7 @@ module URI.ByteString.Arbitrary where
 import           Control.Applicative
 import           Data.Proxy                (Proxy (..))
 import qualified Generics.SOP              as SOP
+import qualified Generics.SOP.Constraint   as SOP
 import qualified Generics.SOP.GGP          as SOP
 import           GHC.Generics              (Generic)
 import           Test.QuickCheck
@@ -22,11 +24,20 @@ import           URI.ByteString
 
 -- this workaround can go away when
 -- <https://github.com/nick8325/quickcheck/pull/40> is merged.
-sopArbitrary :: (Generic a, SOP.GTo a, SOP.All SOP.SListI (SOP.GCode a), SOP.All2 Arbitrary (SOP.GCode a)) => Gen a
+sopArbitrary
+  :: ( SOP.SListI (SOP.GCode b)
+     , Generic b
+     , SOP.GTo b
+     , SOP.AllF SOP.SListI (SOP.GCode b)
+     , SOP.AllF (SOP.All Arbitrary) (SOP.GCode b)
+     )
+  => Gen b
 sopArbitrary = fmap SOP.gto sopArbitrary'
 
 
-sopArbitrary' :: (SOP.All SOP.SListI xss, SOP.All2 Arbitrary xss) => Gen (SOP.SOP SOP.I xss)
+sopArbitrary'
+  :: (SOP.SListI xs, SOP.AllF (SOP.All Arbitrary) xs, SOP.AllF SOP.SListI xs)
+  => Gen (SOP.SOP SOP.I xs)
 sopArbitrary' = oneof (map SOP.hsequence $ SOP.apInjs_POP $ SOP.hcpure p arbitrary)
   where
     p :: Proxy Arbitrary
