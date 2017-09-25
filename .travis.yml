@@ -17,7 +17,7 @@ matrix:
   include:
     - env: ARGS="--stack-yaml=stack-lts-2.yaml"
     - env: ARGS="--stack-yaml=stack-lts-3.yaml"
-    - env: ARGS="--resolver=lts-4"
+    - env: ARGS="--stack-yaml=stack-lts-4.yaml"
     - env: ARGS="--resolver=lts-5"
     - env: ARGS="--resolver=lts-6"
     - env: ARGS="--resolver=lts-7"

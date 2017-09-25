@@ -1,0 +1,10 @@
+resolver: lts-4.2
+packages:
+  - '.'
+extra-deps:
+  - th-lift-instances-0.1.11
+  - fail-4.9.0.0
+flags:
+  uri-bytestring:
+    lib-Werror: true
+extra-package-dbs: []
