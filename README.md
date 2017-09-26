@@ -16,3 +16,4 @@ Haskell URI parsing as ByteStrings
 * [Michael Hatfield](https://github.com/mikehat)
 * [reactormonk](https://github.com/reactormonk)
 * [Oleg Grenrus](https://github.com/phadej)
+* [Edward Betts](https://github.com/EdwardBetts)

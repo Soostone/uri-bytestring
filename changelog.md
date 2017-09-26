@@ -1,3 +1,7 @@
+0.3.0.0
+* Add MonadFail instance.
+* Correct haddock spelling mistake.
+
 0.2.3.3
 * Make buildable on GHC 8.2.1.
 
