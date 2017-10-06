@@ -1,3 +1,6 @@
+0.3.0.1
+* Fix normalization bug where certain combination of options would fail to add a trailing slash.
+
 0.3.0.0
 * Add MonadFail instance.
 * Correct haddock spelling mistake.
