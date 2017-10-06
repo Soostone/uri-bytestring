@@ -430,6 +430,9 @@ normalizeURITests = testGroup "normalization"
   , testCase "percent encoding is upcased automatically" $ do
       normalizeURIBS o "http://example.org/a?foo%3abar=baz" @?=
         "http://example.org/a?foo%3Abar=baz"
+  , testCase "aggressive normalization retains slashes (issue 41)" $ do
+      normalizeURIBS aggressiveNormalization "http://example.org/" @?=
+        "http://example.org/"
   ]
   where
     o = noNormalization

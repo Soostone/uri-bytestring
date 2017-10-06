@@ -171,7 +171,8 @@ normalizeRelativeRef o@URINormalizationOptions {..} mScheme RelativeRef {..} =
   authority <> path <> query <> fragment
   where
     path
-      | unoSlashEmptyPath && BS.null rrPath = "/"
+      | unoSlashEmptyPath && BS.null rrPath  = "/"
+      | segs == [""] = "/"
       | otherwise  = mconcat (intersperse (c8 '/') (map urlEncodePath segs))
     segs = dropSegs (BS.split slash (pathRewrite rrPath))
     pathRewrite
