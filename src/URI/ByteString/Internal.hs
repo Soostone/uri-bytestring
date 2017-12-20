@@ -144,7 +144,7 @@ serializeURI = normalizeURIRef noNormalization
 -- possible, 'serializeURIRef' will be fine. If you intend on
 -- comparing URIs (say for caching purposes), you'll want to use this.
 normalizeURIRef :: URINormalizationOptions -> URIRef a -> Builder
-normalizeURIRef o uri@(URI {..}) = normalizeURI o uri
+normalizeURIRef o uri@(URI {..})       = normalizeURI o uri
 normalizeURIRef o uri@(RelativeRef {}) = normalizeRelativeRef o Nothing uri
 
 
@@ -171,8 +171,8 @@ normalizeRelativeRef o@URINormalizationOptions {..} mScheme RelativeRef {..} =
   authority <> path <> query <> fragment
   where
     path
-      | unoSlashEmptyPath && BS.null rrPath  = "/"
-      | segs == [""] = "/"
+      | unoSlashEmptyPath && BS.null rrPath  = BB.fromByteString "/"
+      | segs == [""] = BB.fromByteString "/"
       | otherwise  = mconcat (intersperse (c8 '/') (map urlEncodePath segs))
     segs = dropSegs (BS.split slash (pathRewrite rrPath))
     pathRewrite
@@ -369,7 +369,7 @@ relativeRefParser' opts = do
   query <- queryParser opts
   frag  <- mFragmentParser
   case frag of
-    Just _ -> endOfInput `orFailWith` MalformedFragment
+    Just _  -> endOfInput `orFailWith` MalformedFragment
     Nothing -> endOfInput `orFailWith` MalformedQuery
   return $ RelativeRef authority path query frag
 
