@@ -1,3 +1,6 @@
+0.3.0.2
+* Avoid using OverloadedStrings for Builder.
+
 0.3.0.1
 * Fix normalization bug where certain combination of options would fail to add a trailing slash.
 
