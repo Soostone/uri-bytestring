@@ -54,10 +54,11 @@ library
   if impl(ghc >= 7.8)
     cpp-options: -DWITH_TYPEABLE
 
-  if impl(ghc < 8)
+  if !impl(ghc >= 8)
     cpp-options: -DLIFT_COMPAT
     build-depends:
-      th-lift >= 0.7.5 && < 0.8
+      th-lift >= 0.7.5 && < 0.8,
+      semigroups >= 0.16.2.2 && <0.19
 
   if flag(lib-Werror)
     ghc-options: -Werror
