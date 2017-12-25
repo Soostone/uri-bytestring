@@ -1,11 +1,9 @@
-resolver: lts-3.22
+resolver: lts-5.18
 packages:
   - '.'
 extra-deps:
   - attoparsec-0.13.2.0
-  - generics-sop-0.2.2.0
   - th-lift-instances-0.1.11
-  - fail-4.9.0.0
 flags:
   uri-bytestring:
     lib-Werror: true

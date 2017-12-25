@@ -27,6 +27,7 @@ import           Data.List                          (delete, intersperse,
 import qualified Data.Map.Strict                    as M
 import           Data.Maybe
 import           Data.Monoid
+import           Data.Semigroup                     (Semigroup)
 import           Data.Ord                           (comparing)
 import           Data.Word
 import           Text.Read                          (readMaybe)
@@ -794,6 +795,7 @@ newtype Parser' e a = Parser' { unParser' :: Parser a}
                              , Alternative
                              , Monad
                              , MonadPlus
+                             , Semigroup
                              , Monoid)
 
 

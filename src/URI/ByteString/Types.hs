@@ -15,6 +15,7 @@ module URI.ByteString.Types where
 import           Data.ByteString (ByteString)
 import qualified Data.Map.Strict as M
 import           Data.Monoid
+import           Data.Semigroup (Semigroup)
 import           Data.Typeable
 import           Data.Word
 import           GHC.Generics
@@ -89,7 +90,7 @@ deriving instance Lift Authority
 
 -------------------------------------------------------------------------------
 newtype Query = Query { queryPairs :: [(ByteString, ByteString)] }
-              deriving (Show, Eq, Monoid, Generic, Typeable, Ord)
+              deriving (Show, Eq, Semigroup, Monoid, Generic, Typeable, Ord)
 
 #ifdef LIFT_COMPAT
 deriveLift ''Query

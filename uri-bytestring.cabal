@@ -39,7 +39,7 @@ library
 
   build-depends:
 
-      attoparsec       >= 0.12    && < 0.14
+      attoparsec       >= 0.13.1.0 && < 0.14
     , base             >= 4.6     && < 5
     , fail             >= 4.9     && < 5
     , bytestring       >= 0.9.1   && < 0.11
@@ -54,10 +54,11 @@ library
   if impl(ghc >= 7.8)
     cpp-options: -DWITH_TYPEABLE
 
-  if impl(ghc < 8)
+  if !impl(ghc >= 8)
     cpp-options: -DLIFT_COMPAT
     build-depends:
-      th-lift >= 0.7.5 && < 0.8
+      th-lift >= 0.7.5 && < 0.8,
+      semigroups >= 0.16.2.2 && <0.19
 
   if flag(lib-Werror)
     ghc-options: -Werror
