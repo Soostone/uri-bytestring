@@ -1,5 +1,5 @@
 name:                uri-bytestring
-version:             0.3.0.2
+version:             0.3.1.0
 synopsis:            Haskell URI parsing as ByteStrings
 description: uri-bytestring aims to be an RFC3986 compliant URI parser that uses efficient ByteStrings for parsing and representing the URI data.
 license:             BSD3
@@ -13,8 +13,7 @@ build-type:          Simple
 cabal-version:       >=1.16
 homepage:            https://github.com/Soostone/uri-bytestring
 bug-reports:         https://github.com/Soostone/uri-bytestring/issues
-Tested-With:         GHC == 7.6.3
-                   , GHC == 7.8.4
+Tested-With:         GHC == 7.8.4
                    , GHC == 7.10.1
                    , GHC == 8.0.2
                    , GHC == 8.2.1
