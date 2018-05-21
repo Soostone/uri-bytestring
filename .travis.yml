@@ -48,3 +48,4 @@ script:
 cache:
   directories:
   - $HOME/.stack
+  - .stack-work
