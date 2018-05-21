@@ -26,9 +26,9 @@ import           Data.List                          (delete, intersperse,
                                                      sortBy, stripPrefix, (\\))
 import qualified Data.Map.Strict                    as M
 import           Data.Maybe
-import           Data.Monoid
-import           Data.Semigroup                     (Semigroup)
+import           Data.Monoid                        as Monoid
 import           Data.Ord                           (comparing)
+import           Data.Semigroup                     (Semigroup)
 import           Data.Word
 import           Text.Read                          (readMaybe)
 -------------------------------------------------------------------------------
@@ -183,7 +183,7 @@ normalizeRelativeRef o@URINormalizationOptions {..} mScheme RelativeRef {..} =
     dropSegs (h:t)
       | unoDropExtraSlashes = h:(filter (not . BS.null) t)
       | otherwise = h:t
-    authority = maybe mempty (serializeAuthority o mScheme) rrAuthority
+    authority = maybe Monoid.mempty (serializeAuthority o mScheme) rrAuthority
     query = serializeQuery o rrQuery
     fragment = maybe mempty (\s -> c8 '#' <> bs s) rrFragment
 
