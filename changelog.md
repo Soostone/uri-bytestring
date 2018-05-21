@@ -1,3 +1,6 @@
+0.3.2.0
+* Only depend on the fail package when it is needed due to GHC version.
+
 0.3.0.2
 * Avoid using OverloadedStrings for Builder.
 
