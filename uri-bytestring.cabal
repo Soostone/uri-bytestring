@@ -69,12 +69,12 @@ test-suite test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
-    URI.ByteString.Arbitrary
     URI.ByteStringTests
     URI.ByteStringQQTests
   hs-source-dirs: test
   build-depends:
       uri-bytestring
+    , uri-bytestring-test
     , HUnit
     , QuickCheck
     , tasty
