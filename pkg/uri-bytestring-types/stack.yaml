@@ -1,8 +1,7 @@
 resolver: lts-11.12
 packages:
 - '.'
-- 'pkg/uri-bytestring-types'
-- 'pkg/uri-bytestring-test'
+- '../..'
 flags:
   uri-bytestring:
     lib-Werror: true

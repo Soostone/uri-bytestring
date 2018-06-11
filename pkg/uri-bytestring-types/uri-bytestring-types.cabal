@@ -1,0 +1,49 @@
+name:                uri-bytestring-types
+version:             0.3.2.0
+synopsis:            Types for uri-bytestring
+description:         This needs to be a separate package because both uri-bytestring-test and uri-bytestring depend on it.
+license:             BSD3
+license-files:       LICENSE
+                   , licenses/http-types/LICENSE
+author:              Doug Beardsley, Michael Xavier
+maintainer:          Michael Xavier <michael.xavier@soostone.com>
+copyright:           Soostone Inc.
+category:            Web
+build-type:          Simple
+cabal-version:       >=1.16
+homepage:            https://github.com/Soostone/uri-bytestring
+bug-reports:         https://github.com/Soostone/uri-bytestring/issues
+Tested-With:         GHC == 7.8.4
+                   , GHC == 7.10.1
+                   , GHC == 8.0.2
+                   , GHC == 8.2.1
+                   , GHC == 8.4.1
+extra-source-files:
+  README.md
+
+flag lib-Werror
+  default: False
+  manual: True
+
+library
+  exposed-modules:
+    URI.ByteString.Types
+
+  build-depends:
+      base >= 4.6 && < 5
+    , bytestring >= 0.9.1   && < 0.11
+    , containers
+    , template-haskell
+    , th-lift-instances
+
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+
+  if flag(lib-Werror)
+    ghc-options: -Werror
+
+  ghc-options: -Wall
+
+source-repository head
+  type:     git
+  location: git://github.com/Soostone/uri-bytestring.git

@@ -34,12 +34,11 @@ library
     URI.ByteString.QQ
   other-modules:
     URI.ByteString.Lens
-    URI.ByteString.Types
     URI.ByteString.Internal
 
   build-depends:
-
-      attoparsec       >= 0.13.1.0 && < 0.14
+      uri-bytestring-types == 0.3.2.0
+    , attoparsec       >= 0.13.1.0 && < 0.14
     , base             >= 4.6     && < 5
     , bytestring       >= 0.9.1   && < 0.11
     , blaze-builder    >= 0.3.0.0 && < 0.5
