@@ -81,12 +81,14 @@ test-suite test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+    URI.ByteString.Arbitrary
     URI.ByteStringTests
     URI.ByteStringQQTests
   hs-source-dirs: test
   build-depends:
       uri-bytestring
     , HUnit
+    , QuickCheck
     , tasty
     , tasty-hunit
     , tasty-quickcheck
@@ -95,21 +97,15 @@ test-suite test
     , base-compat >= 0.7.0
     , blaze-builder
     , bytestring
+    , quickcheck-instances
     , semigroups
     , transformers
     , containers
+    , generics-sop >= 0.2
   default-language:    Haskell2010
 
   if flag(lib-Werror)
     ghc-options: -Werror
-
-  if !flag(export-arbitrary)
-    other-modules:
-      URI.ByteString.Arbitrary
-    build-depends:
-        QuickCheck
-      , quickcheck-instances
-      , generics-sop >= 0.2
 
   ghc-options: -Wall
 
