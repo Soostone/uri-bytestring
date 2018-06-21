@@ -1,8 +1,6 @@
-resolver: lts-10.5
+resolver: lts-11.14
 packages:
 - '.'
-extra-deps:
-  - th-lift-instances-0.1.11
 flags:
   uri-bytestring:
     lib-Werror: true
