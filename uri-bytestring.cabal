@@ -28,6 +28,10 @@ flag lib-Werror
   default: False
   manual: True
 
+flag export-arbitrary
+  default: False
+  manual: True
+
 library
   exposed-modules:
     URI.ByteString
@@ -38,7 +42,6 @@ library
     URI.ByteString.Internal
 
   build-depends:
-
       attoparsec       >= 0.13.1.0 && < 0.14
     , base             >= 4.6     && < 5
     , bytestring       >= 0.9.1   && < 0.11
@@ -62,6 +65,15 @@ library
 
   if flag(lib-Werror)
     ghc-options: -Werror
+
+  if flag(export-arbitrary)
+    hs-source-dirs: test
+    exposed-modules:
+      URI.ByteString.Arbitrary
+    build-depends:
+        QuickCheck
+      , quickcheck-instances
+      , generics-sop >= 0.2
 
   ghc-options: -Wall
 
