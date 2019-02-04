@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -11,7 +12,10 @@ module URI.ByteString.Arbitrary where
 import           Control.Applicative
 import           Data.Proxy                (Proxy (..))
 import qualified Generics.SOP              as SOP
+#if MIN_VERSION_generics_sop(0,4,0)
+#else
 import qualified Generics.SOP.Constraint   as SOP
+#endif
 import qualified Generics.SOP.GGP          as SOP
 import           GHC.Generics              (Generic)
 import           Test.QuickCheck
@@ -29,15 +33,28 @@ sopArbitrary
   :: ( SOP.SListI (SOP.GCode b)
      , Generic b
      , SOP.GTo b
+#if MIN_VERSION_generics_sop(0,4,0)
+     , SOP.All SOP.SListI (SOP.GCode b)
+     , SOP.All (SOP.All Arbitrary) (SOP.GCode b)
+#else
      , SOP.AllF SOP.SListI (SOP.GCode b)
      , SOP.AllF (SOP.All Arbitrary) (SOP.GCode b)
+#endif
      )
   => Gen b
 sopArbitrary = fmap SOP.gto sopArbitrary'
 
 
 sopArbitrary'
-  :: (SOP.SListI xs, SOP.AllF (SOP.All Arbitrary) xs, SOP.AllF SOP.SListI xs)
+  :: ( SOP.SListI xs
+#if MIN_VERSION_generics_sop(0,4,0)
+     , SOP.All SOP.SListI xs
+     , SOP.All (SOP.All Arbitrary) xs
+#else
+     , SOP.AllF SOP.SListI xs
+     , SOP.AllF (SOP.All Arbitrary) xs
+#endif
+     )
   => Gen (SOP.SOP SOP.I xs)
 sopArbitrary' = oneof (map SOP.hsequence $ SOP.apInjs_POP $ SOP.hcpure p arbitrary)
   where
