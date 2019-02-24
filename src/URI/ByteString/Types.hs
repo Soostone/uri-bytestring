@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE StandaloneDeriving         #-}
@@ -12,6 +13,7 @@
 module URI.ByteString.Types where
 
 -------------------------------------------------------------------------------
+import           Control.DeepSeq
 import           Data.ByteString (ByteString)
 import qualified Data.Map.Strict as M
 import           Data.Monoid
@@ -40,6 +42,7 @@ deriveLift ''Scheme
 #else
 deriving instance Lift Scheme
 #endif
+instance NFData Scheme
 
 -------------------------------------------------------------------------------
 newtype Host = Host { hostBS :: ByteString }
@@ -50,6 +53,7 @@ deriveLift ''Host
 #else
 deriving instance Lift Host
 #endif
+instance NFData Host
 
 -------------------------------------------------------------------------------
 -- | While some libraries have chosen to limit this to a Word16, the
@@ -62,6 +66,7 @@ deriveLift ''Port
 #else
 deriving instance Lift Port
 #endif
+instance NFData Port
 
 -------------------------------------------------------------------------------
 data UserInfo = UserInfo {
@@ -74,6 +79,7 @@ deriveLift ''UserInfo
 #else
 deriving instance Lift UserInfo
 #endif
+instance NFData UserInfo
 
 -------------------------------------------------------------------------------
 data Authority = Authority {
@@ -87,6 +93,7 @@ deriveLift ''Authority
 #else
 deriving instance Lift Authority
 #endif
+instance NFData Authority
 
 -------------------------------------------------------------------------------
 newtype Query = Query { queryPairs :: [(ByteString, ByteString)] }
@@ -97,6 +104,7 @@ deriveLift ''Query
 #else
 deriving instance Lift Query
 #endif
+instance NFData Query
 
 -------------------------------------------------------------------------------
 data Absolute deriving(Typeable)
@@ -144,6 +152,12 @@ deriving instance Lift (URIRef a)
 #ifdef WITH_TYPEABLE
 deriving instance Typeable URIRef
 #endif
+
+instance NFData (URIRef Absolute) where
+  rnf u = (uriScheme u) `deepseq` (uriAuthority u) `deepseq` (uriPath u) `deepseq` (uriFragment u) `deepseq` ()
+
+instance NFData (URIRef Relative) where
+  rnf u = (rrAuthority u) `deepseq` (rrPath u) `deepseq` (rrQuery u) `deepseq` (rrFragment u) `deepseq` ()
 
 -------------------------------------------------------------------------------
 type URI = URIRef Absolute
