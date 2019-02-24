@@ -204,6 +204,7 @@ data SchemaError = NonAlphaLeading -- ^ Scheme must start with an alphabet chara
                  | MissingColon    -- ^ Schemas must be followed by a colon
                  deriving (Show, Eq, Read, Generic, Typeable)
 
+instance NFData SchemaError
 
 -------------------------------------------------------------------------------
 data URIParseError = MalformedScheme SchemaError
@@ -215,3 +216,5 @@ data URIParseError = MalformedScheme SchemaError
                    | MalformedPath
                    | OtherError String -- ^ Catchall for unpredictable errors
                    deriving (Show, Eq, Generic, Read, Typeable)
+
+instance NFData URIParseError
