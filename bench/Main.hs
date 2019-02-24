@@ -15,21 +15,6 @@ import           URI.ByteString
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
-instance NFData Authority
-instance NFData Host
-instance NFData UserInfo
-instance NFData SchemaError
-instance NFData URIParseError
-instance NFData Scheme
-instance NFData Port
-instance NFData Query
-
-instance NFData (URIRef a) where
-  rnf (URI a b c d e) = rnf a `seq` rnf b `seq` rnf c `seq` rnf d `seq` rnf e
-  rnf (RelativeRef b c d e) = rnf b `seq` rnf c `seq` rnf d `seq` rnf e
-
-
--------------------------------------------------------------------------------
 main :: IO ()
 main = defaultMain
   [
