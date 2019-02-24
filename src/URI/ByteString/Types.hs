@@ -153,11 +153,9 @@ deriving instance Lift (URIRef a)
 deriving instance Typeable URIRef
 #endif
 
-instance NFData (URIRef Absolute) where
-  rnf u = (uriScheme u) `deepseq` (uriAuthority u) `deepseq` (uriPath u) `deepseq` (uriFragment u) `deepseq` ()
-
-instance NFData (URIRef Relative) where
-  rnf u = (rrAuthority u) `deepseq` (rrPath u) `deepseq` (rrQuery u) `deepseq` (rrFragment u) `deepseq` ()
+instance NFData (URIRef a) where
+  rnf u@URI{} = (uriScheme u) `deepseq` (uriAuthority u) `deepseq` (uriPath u) `deepseq` (uriFragment u) `deepseq` ()
+  rnf u@RelativeRef{} = (rrAuthority u) `deepseq` (rrPath u) `deepseq` (rrQuery u) `deepseq` (rrFragment u) `deepseq` ()
 
 -------------------------------------------------------------------------------
 type URI = URIRef Absolute
