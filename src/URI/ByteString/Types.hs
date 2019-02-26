@@ -14,6 +14,7 @@ module URI.ByteString.Types where
 
 -------------------------------------------------------------------------------
 import           Control.DeepSeq
+import           Control.DeepSeq.Generics
 import           Data.ByteString (ByteString)
 import qualified Data.Map.Strict as M
 import           Data.Monoid
@@ -42,7 +43,8 @@ deriveLift ''Scheme
 #else
 deriving instance Lift Scheme
 #endif
-instance NFData Scheme
+instance NFData Scheme where
+  rnf = genericRnfV1
 
 -------------------------------------------------------------------------------
 newtype Host = Host { hostBS :: ByteString }
@@ -53,7 +55,8 @@ deriveLift ''Host
 #else
 deriving instance Lift Host
 #endif
-instance NFData Host
+instance NFData Host where
+  rnf = genericRnfV1
 
 -------------------------------------------------------------------------------
 -- | While some libraries have chosen to limit this to a Word16, the
@@ -66,7 +69,8 @@ deriveLift ''Port
 #else
 deriving instance Lift Port
 #endif
-instance NFData Port
+instance NFData Port where
+  rnf = genericRnfV1
 
 -------------------------------------------------------------------------------
 data UserInfo = UserInfo {
@@ -79,7 +83,8 @@ deriveLift ''UserInfo
 #else
 deriving instance Lift UserInfo
 #endif
-instance NFData UserInfo
+instance NFData UserInfo where
+  rnf = genericRnfV1
 
 -------------------------------------------------------------------------------
 data Authority = Authority {
@@ -93,7 +98,8 @@ deriveLift ''Authority
 #else
 deriving instance Lift Authority
 #endif
-instance NFData Authority
+instance NFData Authority where
+  rnf = genericRnfV1
 
 -------------------------------------------------------------------------------
 newtype Query = Query { queryPairs :: [(ByteString, ByteString)] }
@@ -104,7 +110,8 @@ deriveLift ''Query
 #else
 deriving instance Lift Query
 #endif
-instance NFData Query
+instance NFData Query where
+  rnf = genericRnfV1
 
 -------------------------------------------------------------------------------
 data Absolute deriving(Typeable)
@@ -204,7 +211,8 @@ data SchemaError = NonAlphaLeading -- ^ Scheme must start with an alphabet chara
                  | MissingColon    -- ^ Schemas must be followed by a colon
                  deriving (Show, Eq, Read, Generic, Typeable)
 
-instance NFData SchemaError
+instance NFData SchemaError where
+  rnf = genericRnfV1
 
 -------------------------------------------------------------------------------
 data URIParseError = MalformedScheme SchemaError
@@ -217,4 +225,5 @@ data URIParseError = MalformedScheme SchemaError
                    | OtherError String -- ^ Catchall for unpredictable errors
                    deriving (Show, Eq, Generic, Read, Typeable)
 
-instance NFData URIParseError
+instance NFData URIParseError where
+  rnf = genericRnfV1
