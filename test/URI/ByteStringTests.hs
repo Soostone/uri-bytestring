@@ -4,25 +4,28 @@
 module URI.ByteStringTests (tests) where
 
 -------------------------------------------------------------------------------
-import           Control.Applicative      (Const (..))
-import qualified Blaze.ByteString.Builder as BB
-import           Data.ByteString          (ByteString)
-import qualified Data.ByteString.Char8    as B8
+import qualified Blaze.ByteString.Builder  as BB
+import           Control.Applicative       (Const (..))
+import           Data.ByteString           (ByteString)
+import qualified Data.ByteString.Char8     as B8
 import           Data.Either
-import           Data.Function.Compat     ((&))
-import           Data.Functor.Identity    (Identity (..))
-import qualified Data.Map.Strict          as M
+import           Data.Function.Compat      ((&))
+import           Data.Functor.Identity     (Identity (..))
+import qualified Data.Map.Strict           as M
 import           Data.Monoid
+import           Hedgehog
+import qualified Hedgehog.Gen              as Gen
+import           Safe                      (readMay)
 import           Test.Tasty
+import           Test.Tasty.Hedgehog
 import           Test.Tasty.HUnit
-import           Test.Tasty.QuickCheck
 -------------------------------------------------------------------------------
 import           Prelude
 -------------------------------------------------------------------------------
 import           URI.ByteString
-import           URI.ByteString.Arbitrary ()
+import           URI.ByteString.Generators
 -------------------------------------------------------------------------------
-import           URI.ByteStringQQTests    ()
+import           URI.ByteStringQQTests     ()
 
 infixr 4 .~
 (.~) :: ((a -> Identity b) -> s -> Identity t) -> b -> s -> t
@@ -182,8 +185,9 @@ parseUriTests = testGroup "parseUri"
 uriParseErrorInstancesTests :: TestTree
 uriParseErrorInstancesTests = testGroup "URIParseError instances"
   [
-    testProperty "roundtrips between Show and Read" $ \(e :: URIParseError) ->
-      read (show e) == e
+    testProperty "roundtrips between Show and Read" $ property $ do
+      parseError <- forAll genURIParseError
+      trippingShow parseError
   ]
 
 
@@ -191,68 +195,96 @@ uriParseErrorInstancesTests = testGroup "URIParseError instances"
 lensTests :: TestTree
 lensTests = testGroup "lenses"
   [
-    testProperty "schemeBSL Lens" $ \bs bs' ->
-      let wrapped = Scheme bs
-      in (wrapped ^. schemeBSL) === schemeBS wrapped .&&.
-         (wrapped & schemeBSL .~ bs') === wrapped { schemeBS = bs'}
-  , testProperty "hostBSL Lens" $ \bs bs' ->
-      let wrapped = Host bs
-      in (wrapped ^. hostBSL) === hostBS wrapped .&&.
-         (wrapped & hostBSL .~ bs') === wrapped { hostBS = bs'}
-  , testProperty "portNumberL Lens" $ \n n' ->
-      let wrapped = Port n
-      in (wrapped ^. portNumberL) === portNumber wrapped .&&.
-         (wrapped & portNumberL .~ n') === wrapped { portNumber = n'}
-  , testProperty "queryPairsL Lens" $ \ps ps' ->
-      let wrapped = Query ps
-      in wrapped ^. queryPairsL === queryPairs wrapped .&&.
-         (wrapped & queryPairsL .~ ps') === wrapped { queryPairs = ps'}
-
-  , testProperty "authorityUserInfoL Lens" $ \a ui ->
-     (a ^. authorityUserInfoL === authorityUserInfo a) .&&.
-     ((a & authorityUserInfoL .~ ui) === a { authorityUserInfo = ui })
-  , testProperty "authorityHostL Lens" $ \a host ->
-     (a ^. authorityHostL === authorityHost a) .&&.
-     ((a & authorityHostL .~ host) === a { authorityHost = host })
-  , testProperty "authorityPortL Lens" $ \a port ->
-     (a ^. authorityPortL === authorityPort a) .&&.
-     ((a & authorityPortL .~ port) === a { authorityPort = port })
-
-  , testProperty "uiUsernameL Lens" $ \ui bs ->
-     (ui ^. uiUsernameL === uiUsername ui) .&&.
-     ((ui & uiUsernameL .~ bs) === ui { uiUsername = bs })
-  , testProperty "uiPasswordL Lens" $ \ui bs ->
-     (ui ^. uiPasswordL === uiPassword ui) .&&.
-     ((ui & uiPasswordL .~ bs) === ui { uiPassword = bs })
-
-  , testProperty "uriSchemeL Lens" $ \uri x ->
-     (uri ^. uriSchemeL === uriScheme uri) .&&.
-     ((uri & uriSchemeL .~ x) === uri { uriScheme = x })
-  , testProperty "authorityL Lens on URI" $ \uri x ->
-     (uri ^. authorityL === uriAuthority uri) .&&.
-     ((uri & authorityL .~ x) === uri { uriAuthority = x })
-  , testProperty "pathL Lens on URI" $ \uri x ->
-     (uri ^. pathL === uriPath uri) .&&.
-     ((uri & pathL .~ x) === uri { uriPath = x })
-  , testProperty "queryL Lens on URI" $ \uri x ->
-     (uri ^. queryL === uriQuery uri) .&&.
-     ((uri & queryL .~ x) === uri { uriQuery = x })
-  , testProperty "fragmentL Lens on URI" $ \uri x ->
-     (uri ^. fragmentL === uriFragment uri) .&&.
-     ((uri & fragmentL .~ x) === uri { uriFragment = x })
-
-  , testProperty "authorityL Lens on relative ref" $ \rr x ->
-     (rr ^. authorityL === rrAuthority rr) .&&.
-     ((rr & authorityL .~ x) === rr { rrAuthority = x })
-  , testProperty "pathL Lens on relative ref" $ \rr x ->
-     (rr ^. pathL === rrPath rr) .&&.
-     ((rr & pathL .~ x) === rr { rrPath = x })
-  , testProperty "queryL Lens on relative ref" $ \rr x ->
-     (rr ^. queryL === rrQuery rr) .&&.
-     ((rr & queryL .~ x) === rr { rrQuery = x })
-  , testProperty "fragmentL Lens on relative ref" $ \rr x ->
-     (rr ^. fragmentL === rrFragment rr) .&&.
-     ((rr & fragmentL .~ x) === rr { rrFragment = x })
+    testProperty "schemeBSL Lens" $ property $ do
+      wrapped <- forAll genScheme
+      Scheme bs' <- forAll genScheme
+      (wrapped ^. schemeBSL) === schemeBS wrapped
+      (wrapped & schemeBSL .~ bs') === wrapped { schemeBS = bs'}
+  , testProperty "hostBSL Lens" $ property $ do
+      wrapped <- forAll genHost
+      Host bs' <- forAll genHost
+      (wrapped ^. hostBSL) === hostBS wrapped
+      (wrapped & hostBSL .~ bs') === wrapped { hostBS = bs'}
+  , testProperty "portNumberL Lens" $ property $ do
+      wrapped <- forAll genPort
+      Port n' <- forAll genPort
+      (wrapped ^. portNumberL) === portNumber wrapped
+      (wrapped & portNumberL .~ n') === wrapped { portNumber = n'}
+  , testProperty "queryPairsL Lens" $ property $ do
+      wrapped <- forAll genQuery
+      Query ps' <- forAll genQuery
+      wrapped ^. queryPairsL === queryPairs wrapped
+      (wrapped & queryPairsL .~ ps') === wrapped { queryPairs = ps'}
+  , testProperty "authorityUserInfoL Lens" $ property $ do
+      authority <- forAll genAuthority
+      userInfo <- forAll (Gen.maybe genUserInfo)
+      (authority ^. authorityUserInfoL === authorityUserInfo authority)
+      (authority & authorityUserInfoL .~ userInfo) === authority { authorityUserInfo = userInfo }
+  , testProperty "authorityHostL Lens" $ property $ do
+      authority <- forAll genAuthority
+      host <- forAll genHost
+      (authority ^. authorityHostL === authorityHost authority)
+      (authority & authorityHostL .~ host) === authority { authorityHost = host }
+  , testProperty "authorityPortL Lens" $ property $ do
+      authority <- forAll genAuthority
+      port <- forAll (Gen.maybe genPort)
+      (authority ^. authorityPortL === authorityPort authority)
+      (authority & authorityPortL .~ port) === authority { authorityPort = port }
+  , testProperty "uiUsernameL Lens" $ property $ do
+      ui <- forAll genUserInfo
+      bs <- forAll genBS
+      (ui ^. uiUsernameL === uiUsername ui)
+      (ui & uiUsernameL .~ bs) === ui { uiUsername = bs }
+  , testProperty "uiPasswordL Lens" $ property $ do
+      ui <- forAll genUserInfo
+      bs <- forAll genBS
+      (ui ^. uiPasswordL === uiPassword ui)
+      (ui & uiPasswordL .~ bs) === ui { uiPassword = bs }
+  , testProperty "uriSchemeL Lens" $ property $ do
+      uri <- forAll genAbsoluteURIRef
+      x <- forAll genScheme
+      uri ^. uriSchemeL === uriScheme uri
+      (uri & uriSchemeL .~ x) === uri { uriScheme = x }
+  , testProperty "authorityL Lens on URI" $ property $ do
+      uri <- forAll genAbsoluteURIRef
+      x <- forAll (Gen.maybe genAuthority)
+      uri ^. authorityL === uriAuthority uri
+      (uri & authorityL .~ x) === uri { uriAuthority = x }
+  , testProperty "pathL Lens on URI" $ property $ do
+      uri <- forAll genAbsoluteURIRef
+      x <- forAll genBS
+      uri ^. pathL === uriPath uri
+      (uri & pathL .~ x) === uri { uriPath = x }
+  , testProperty "queryL Lens on URI" $ property $ do
+      uri <- forAll genAbsoluteURIRef
+      x <- forAll genQuery
+      uri ^. queryL === uriQuery uri
+      (uri & queryL .~ x) === uri { uriQuery = x }
+  , testProperty "fragmentL Lens on URI" $ property $ do
+      uri <- forAll genAbsoluteURIRef
+      x <- forAll (Gen.maybe genBS)
+      uri ^. fragmentL === uriFragment uri
+      (uri & fragmentL .~ x) === uri { uriFragment = x }
+  , testProperty "authorityL Lens on relative ref" $ property $ do
+      rr <- forAll genRelativeURIRef
+      x <- forAll (Gen.maybe genAuthority)
+      (rr ^. authorityL === rrAuthority rr)
+      (rr & authorityL .~ x) === rr { rrAuthority = x }
+  , testProperty "pathL Lens on relative ref" $ property $ do
+      rr <- forAll genRelativeURIRef
+      x <- forAll genBS
+      rr ^. pathL === rrPath rr
+      (rr & pathL .~ x) === rr { rrPath = x }
+  , testProperty "queryL Lens on relative ref" $ property $ do
+      rr <- forAll genRelativeURIRef
+      x <- forAll genQuery
+      rr ^. queryL === rrQuery rr
+      (rr & queryL .~ x) === rr { rrQuery = x }
+  , testProperty "fragmentL Lens on relative ref" $ property $ do
+      rr <- forAll genRelativeURIRef
+      x <- forAll (Gen.maybe genBS)
+      rr ^. fragmentL === rrFragment rr
+      (rr & fragmentL .~ x) === rr { rrFragment = x }
   ]
 
 
@@ -438,3 +470,13 @@ normalizeURITests = testGroup "normalization"
     o = noNormalization
     normalizeURIBS opts bs = let Right x = parseURI laxURIParserOptions bs
                              in normalizeURIRef' opts x
+
+trippingShow
+  :: ( Show a
+     , Read a
+     , Eq a
+     , MonadTest m
+     )
+  => a
+  -> m ()
+trippingShow a = tripping a show readMay

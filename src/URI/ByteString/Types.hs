@@ -12,20 +12,20 @@
 module URI.ByteString.Types where
 
 -------------------------------------------------------------------------------
-import           Data.ByteString (ByteString)
-import qualified Data.Map.Strict as M
+import           Data.ByteString            (ByteString)
+import qualified Data.Map.Strict            as M
 import           Data.Monoid
-import           Data.Semigroup (Semigroup)
+import           Data.Semigroup             as Semigroup
 import           Data.Typeable
 import           Data.Word
 import           GHC.Generics
-import           Instances.TH.Lift()
+import           Instances.TH.Lift          ()
 -------------------------------------------------------------------------------
 import           Prelude
 -------------------------------------------------------------------------------
 #ifdef LIFT_COMPAT
-import           Language.Haskell.TH.Syntax()
 import           Language.Haskell.TH.Lift
+import           Language.Haskell.TH.Syntax ()
 #else
 import           Language.Haskell.TH.Syntax
 #endif
@@ -90,7 +90,7 @@ deriving instance Lift Authority
 
 -------------------------------------------------------------------------------
 newtype Query = Query { queryPairs :: [(ByteString, ByteString)] }
-              deriving (Show, Eq, Semigroup, Monoid, Generic, Typeable, Ord)
+              deriving (Show, Eq, Semigroup.Semigroup, Monoid, Generic, Typeable, Ord)
 
 #ifdef LIFT_COMPAT
 deriveLift ''Query
@@ -190,7 +190,7 @@ data URINormalizationOptions = URINormalizationOptions {
 data SchemaError = NonAlphaLeading -- ^ Scheme must start with an alphabet character
                  | InvalidChars    -- ^ Subsequent characters in the schema were invalid
                  | MissingColon    -- ^ Schemas must be followed by a colon
-                 deriving (Show, Eq, Read, Generic, Typeable)
+                 deriving (Show, Eq, Read, Generic, Typeable, Enum, Bounded)
 
 
 -------------------------------------------------------------------------------

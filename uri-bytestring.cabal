@@ -39,12 +39,12 @@ library
 
   build-depends:
 
-      attoparsec       >= 0.13.1.0 && < 0.14
+      attoparsec       >= 0.13.1.0
     , base             >= 4.6     && < 5
-    , bytestring       >= 0.9.1   && < 0.11
-    , blaze-builder    >= 0.3.0.0 && < 0.5
-    , template-haskell >= 2.9     && < 2.15
-    , th-lift-instances >= 0.1.8  && < 0.2
+    , bytestring       >= 0.9.1
+    , blaze-builder    >= 0.3.0.0
+    , template-haskell >= 2.9
+    , th-lift-instances >= 0.1.8
     , containers
 
   hs-source-dirs:      src
@@ -69,27 +69,26 @@ test-suite test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
-    URI.ByteString.Arbitrary
+    URI.ByteString.Generators
     URI.ByteStringTests
     URI.ByteStringQQTests
   hs-source-dirs: test
   build-depends:
       uri-bytestring
     , HUnit
-    , QuickCheck
     , tasty
     , tasty-hunit
-    , tasty-quickcheck
+    , hedgehog
+    , tasty-hedgehog
     , attoparsec
     , base
     , base-compat >= 0.7.0
     , blaze-builder
     , bytestring
-    , quickcheck-instances
     , semigroups
     , transformers
     , containers
-    , generics-sop >= 0.2
+    , safe
   default-language:    Haskell2010
 
   if flag(lib-Werror)

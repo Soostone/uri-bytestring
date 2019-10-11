@@ -26,9 +26,9 @@ import           Data.List                          (delete, intersperse,
                                                      sortBy, stripPrefix, (\\))
 import qualified Data.Map.Strict                    as M
 import           Data.Maybe
-import           Data.Monoid                        as Monoid
+import           Data.Monoid                        as Monoid (mempty)
 import           Data.Ord                           (comparing)
-import           Data.Semigroup                     (Semigroup)
+import           Data.Semigroup                     as Semigroup
 import           Data.Word
 import           Text.Read                          (readMaybe)
 -------------------------------------------------------------------------------
@@ -795,7 +795,7 @@ newtype Parser' e a = Parser' { unParser' :: Parser a}
                              , Alternative
                              , Monad
                              , MonadPlus
-                             , Semigroup
+                             , Semigroup.Semigroup
                              , Monoid)
 
 
@@ -810,7 +810,7 @@ instance F.MonadFail (Parser' e) where
 -------------------------------------------------------------------------------
 -- | Use with caution. Catch a parser failing and return Nothing.
 mParse :: Parser' e a -> Parser' e (Maybe a)
-mParse p = option Nothing (Just <$> p)
+mParse p = A.option Nothing (Just <$> p)
 
 
 -------------------------------------------------------------------------------
