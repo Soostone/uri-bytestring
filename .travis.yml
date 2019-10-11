@@ -15,8 +15,6 @@ addons:
 # change flags or use --stack-yaml to point to a different file.
 matrix:
   include:
-    - env: ARGS="--resolver=lts-10"
-    - env: ARGS="--resolver=lts-11"
     - env: ARGS="--resolver=lts-12"
     - env: ARGS="--resolver=lts-13"
     - env: ARGS="--resolver=lts-14"
