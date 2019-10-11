@@ -1,3 +1,6 @@
+0.3.2.2
+* Loosen dependencies
+
 0.3.2.1
 * Loosen upper bounds on template-haskell
 
