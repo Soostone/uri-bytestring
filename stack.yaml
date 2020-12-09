@@ -1,9 +1,7 @@
-resolver: lts-14.4
+resolver: lts-16.25
 packages:
   - '.'
-extra-deps:
-  - tasty-hedgehog-1.0.0.1
-  - hedgehog-1.0.1
+extra-deps: []
 flags:
   uri-bytestring:
     lib-Werror: true
