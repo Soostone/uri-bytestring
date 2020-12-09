@@ -185,7 +185,7 @@ normalizeRelativeRef o@URINormalizationOptions {..} mScheme RelativeRef {..} =
       | otherwise = h:t
     authority = maybe Monoid.mempty (serializeAuthority o mScheme) rrAuthority
     query = serializeQuery o rrQuery
-    fragment = maybe mempty (\s -> c8 '#' <> bs s) rrFragment
+    fragment = serializeFragment rrFragment
 
 
 -------------------------------------------------------------------------------
@@ -254,6 +254,9 @@ serializeRelativeRef' = BB.toByteString . serializeRelativeRef
 
 
 -------------------------------------------------------------------------------
+-- | Serialize the query part of a url
+-- @serializeQuery opts mempty = ""@
+-- @serializeQuery opts (Query [("a","b"),("c","d")]) = "?a=b&c=d"@
 serializeQuery :: URINormalizationOptions -> Query -> Builder
 serializeQuery _ (Query []) = mempty
 serializeQuery URINormalizationOptions {..} (Query ps) =
@@ -263,6 +266,19 @@ serializeQuery URINormalizationOptions {..} (Query ps) =
     ps'
       | unoSortParameters = sortBy (comparing fst) ps
       | otherwise = ps
+
+
+serializeQuery' :: URINormalizationOptions -> Query -> ByteString
+serializeQuery' opts = BB.toByteString . serializeQuery opts
+
+
+-------------------------------------------------------------------------------
+serializeFragment :: Maybe ByteString -> Builder
+serializeFragment = maybe mempty (\s -> c8 '#' <> bs s)
+
+
+serializeFragment' :: Maybe ByteString -> ByteString
+serializeFragment' = BB.toByteString . serializeFragment
 
 
 -------------------------------------------------------------------------------
@@ -287,6 +303,9 @@ serializeAuthority URINormalizationOptions {..} mScheme Authority {..} = BB.from
       | M.lookup s unoDefaultPorts == Just p = Nothing
       | otherwise = Just p
 
+
+serializeAuthority' :: URINormalizationOptions -> Maybe Scheme -> Authority -> ByteString
+serializeAuthority' opts mScheme = BB.toByteString . serializeAuthority opts mScheme
 
 -------------------------------------------------------------------------------
 serializeUserInfo :: UserInfo -> Builder

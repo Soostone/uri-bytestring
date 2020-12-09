@@ -55,6 +55,12 @@ module URI.ByteString
     -- * Serializing
     , serializeURIRef
     , serializeURIRef'
+    , serializeQuery
+    , serializeQuery'
+    , serializeFragment
+    , serializeFragment'
+    , serializeAuthority
+    , serializeAuthority'
     -- ** Normalized Serialization
     , normalizeURIRef
     , normalizeURIRef'
