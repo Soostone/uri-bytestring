@@ -1,3 +1,6 @@
+0.3.3.0
+* Export more granular serializtion functions for things like the query string.
+
 0.3.2.2
 * Loosen dependencies
 
