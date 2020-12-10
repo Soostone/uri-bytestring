@@ -312,6 +312,10 @@ serializeUserInfo :: UserInfo -> Builder
 serializeUserInfo UserInfo {..} = bs uiUsername <> c8 ':' <> bs uiPassword <> c8 '@'
 
 
+serializeUserInfo' :: UserInfo -> ByteString
+serializeUserInfo' = BB.toByteString . serializeUserInfo
+
+
 -------------------------------------------------------------------------------
 bs :: ByteString -> Builder
 bs = BB.fromByteString

@@ -61,6 +61,8 @@ module URI.ByteString
     , serializeFragment'
     , serializeAuthority
     , serializeAuthority'
+    , serializeUserInfo
+    , serializeUserInfo'
     -- ** Normalized Serialization
     , normalizeURIRef
     , normalizeURIRef'
