@@ -1,3 +1,7 @@
+0.3.3.1
+* Remove >= from cabal version. Thanks to [felixonmars](https://github.com/felixonmars).
+* Conditionally drop dependency on semigroups library. Thanks to [felixonmars](https://github.com/felixonmars).
+
 0.3.3.0
 * Export more granular serializtion functions for things like the query string.
 
