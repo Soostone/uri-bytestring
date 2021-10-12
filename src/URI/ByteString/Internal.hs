@@ -108,8 +108,8 @@ aggressiveNormalization = URINormalizationOptions True True True True True True 
 -- | @toAbsolute scheme ref@ converts @ref@ to an absolute URI.
 -- If @ref@ is already absolute, then it is unchanged.
 toAbsolute :: Scheme -> URIRef a -> URIRef Absolute
-toAbsolute scheme (RelativeRef {..}) = URI scheme rrAuthority rrPath rrQuery rrFragment
-toAbsolute _ uri@(URI {..}) = uri
+toAbsolute scheme RelativeRef {..} = URI scheme rrAuthority rrPath rrQuery rrFragment
+toAbsolute _ uri@URI {} = uri
 
 
 -------------------------------------------------------------------------------
@@ -145,8 +145,8 @@ serializeURI = normalizeURIRef noNormalization
 -- possible, 'serializeURIRef' will be fine. If you intend on
 -- comparing URIs (say for caching purposes), you'll want to use this.
 normalizeURIRef :: URINormalizationOptions -> URIRef a -> Builder
-normalizeURIRef o uri@(URI {..})       = normalizeURI o uri
-normalizeURIRef o uri@(RelativeRef {}) = normalizeRelativeRef o Nothing uri
+normalizeURIRef o uri@URI {}       = normalizeURI o uri
+normalizeURIRef o uri@RelativeRef {} = normalizeRelativeRef o Nothing uri
 
 
 -------------------------------------------------------------------------------
