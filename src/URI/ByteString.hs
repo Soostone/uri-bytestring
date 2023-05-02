@@ -50,8 +50,12 @@ module URI.ByteString
     -- * Parsing
     parseURI,
     parseRelativeRef,
+    parseAuthority,
+    parseHost,
     uriParser,
     relativeRefParser,
+    authorityParser,
+    hostParser,
 
     -- * Serializing
     serializeURIRef,
