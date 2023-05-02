@@ -68,7 +68,7 @@ uiUsernameL =
 
 -------------------------------------------------------------------------------
 uiPasswordL ::
-  Lens' UserInfo ByteString
+  Lens' UserInfo (Maybe ByteString)
 uiPasswordL =
   lens uiPassword (\a b -> a {uiPassword = b})
 {-# INLINE uiPasswordL #-}

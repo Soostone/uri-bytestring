@@ -68,7 +68,7 @@ deriving instance Lift Port
 -------------------------------------------------------------------------------
 data UserInfo = UserInfo
   { uiUsername :: ByteString,
-    uiPassword :: ByteString
+    uiPassword :: Maybe ByteString
   }
   deriving (Show, Eq, Generic, Typeable, Ord)
 
