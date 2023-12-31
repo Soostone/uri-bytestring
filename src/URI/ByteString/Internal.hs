@@ -28,7 +28,6 @@ import Data.List
     intersperse,
     sortBy,
     stripPrefix,
-    (\\),
   )
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -380,8 +379,13 @@ uriParser' :: URIParserOptions -> URIParser (URIRef Absolute)
 uriParser' opts = do
   scheme <- schemeParser
   void $ word8 colon `orFailWith` MalformedScheme MissingColon
-  RelativeRef authority path query fragment <- relativeRefParser' opts
-  return $ URI scheme authority path query fragment
+  (authority, path) <- hierPartParser
+  query <- queryParser opts
+  frag <- mFragmentParser
+  case frag of
+    Just _ -> endOfInput `orFailWith` MalformedFragment
+    Nothing -> endOfInput `orFailWith` MalformedQuery
+  return $ URI scheme authority path query frag
 
 -------------------------------------------------------------------------------
 
@@ -394,7 +398,7 @@ relativeRefParser = unParser' . relativeRefParser'
 -- | Toplevel parser for relative refs
 relativeRefParser' :: URIParserOptions -> URIParser (URIRef Relative)
 relativeRefParser' opts = do
-  (authority, path) <- hierPartParser <|> rrPathParser
+  (authority, path) <- relativePartParser
   query <- queryParser opts
   frag <- mFragmentParser
   case frag of
@@ -415,55 +419,67 @@ schemeParser = do
 
 -------------------------------------------------------------------------------
 
--- | Hier part immediately follows the schema and encompasses the
--- authority and path sections.
+-- | Corresponds to 'hier-part' in RFC 3986 section 3.
 hierPartParser :: URIParser (Maybe Authority, ByteString)
 hierPartParser =
+  (fmap . fmap) urlDecode' $
   authWithPathParser
-    <|> pathAbsoluteParser
-    <|> pathRootlessParser
-    <|> pathEmptyParser
+    <|> ((Nothing,) <$> pathAbsoluteParser `orFailWith` MalformedPath)
+    <|> ((Nothing,) <$> pathRootlessParser `orFailWith` MalformedPath)
+    <|> ((Nothing,) <$> pathEmptyParser    `orFailWith` MalformedPath)
 
 -------------------------------------------------------------------------------
 
--- | Relative references have awkward corner cases.  See
--- 'firstRelRefSegmentParser'.
-rrPathParser :: URIParser (Maybe Authority, ByteString)
-rrPathParser =
-  (Nothing,)
-    <$> ((<>) <$> firstRelRefSegmentParser <*> pathParser)
+-- | Corresponds to 'relative-part' in RFC 3986 section 4.2.
+relativePartParser :: URIParser (Maybe Authority, ByteString)
+relativePartParser =
+  (fmap . fmap) urlDecode' $
+  authWithPathParser
+    <|> ((Nothing,) <$> pathAbsoluteParser `orFailWith` MalformedPath)
+    <|> ((Nothing,) <$> pathNoSchemeParser `orFailWith` MalformedPath)
+    <|> ((Nothing,) <$> pathEmptyParser    `orFailWith` MalformedPath)
 
 -------------------------------------------------------------------------------
 
 -- | See the "authority path-abempty" grammar in the RFC
 authWithPathParser :: URIParser (Maybe Authority, ByteString)
-authWithPathParser = string' "//" *> ((,) <$> mAuthorityParser <*> pathParser)
+authWithPathParser = string' "//" *> ((,) <$> mAuthorityParser <*> (pathAbEmptyParser `orFailWith` MalformedPath))
+
+-------------------------------------------------------------------------------
+
+-- | See the "path-abempty" grammar in the RFC.
+pathAbEmptyParser :: Parser ByteString
+pathAbEmptyParser = mconcat <$> A.many' (sequenceM [string "/", segmentParser])
 
 -------------------------------------------------------------------------------
 
 -- | See the "path-absolute" grammar in the RFC. Essentially a special
 -- case of rootless.
-pathAbsoluteParser :: URIParser (Maybe Authority, ByteString)
-pathAbsoluteParser = string' "/" *> pathRootlessParser
+pathAbsoluteParser :: Parser ByteString
+pathAbsoluteParser = sequenceM [string "/", pathRootlessParser]
+
+-------------------------------------------------------------------------------
+
+-- | See the "path-noscheme" grammar in the RFC.
+pathNoSchemeParser :: Parser ByteString
+pathNoSchemeParser = sequenceM [segmentNZNCParser, pathAbEmptyParser]
 
 -------------------------------------------------------------------------------
 
 -- | See the "path-rootless" grammar in the RFC.
-pathRootlessParser :: URIParser (Maybe Authority, ByteString)
-pathRootlessParser = (,) <$> pure Nothing <*> pathParser1
+pathRootlessParser :: Parser ByteString
+pathRootlessParser = sequenceM [segmentNZParser, pathAbEmptyParser]
 
 -------------------------------------------------------------------------------
 
 -- | See the "path-empty" grammar in the RFC. Must not be followed
 -- with a path-valid char.
-pathEmptyParser :: URIParser (Maybe Authority, ByteString)
+pathEmptyParser :: Parser ByteString
 pathEmptyParser = do
-  nextChar <- peekWord8 `orFailWith` OtherError "impossible peekWord8 error"
+  nextChar <- peekWord8
   case nextChar of
-    Just c -> guard (notInClass pchar c) >> return emptyCase
-    _ -> return emptyCase
-  where
-    emptyCase = (Nothing, mempty)
+    Just c -> guard (notInClass pchar c) >> return mempty
+    _ -> return mempty
 
 -------------------------------------------------------------------------------
 
@@ -581,34 +597,19 @@ mPortParser = word8' colon `thenJust` portParser
 portParser :: URIParser Port
 portParser = (Port <$> A.decimal) `orFailWith` MalformedPort
 
--------------------------------------------------------------------------------
-
--- | Path with any number of segments
-pathParser :: URIParser ByteString
-pathParser = pathParser' A.many'
 
 -------------------------------------------------------------------------------
 
--- | Path with at least 1 segment
-pathParser1 :: URIParser ByteString
-pathParser1 = pathParser' A.many1'
 
--------------------------------------------------------------------------------
+segmentParser :: Parser ByteString
+segmentParser = A.takeWhile (inClass pchar)
 
--- | Parses the path section of a url. Note that while this can take
--- percent-encoded characters, it does not itself decode them while parsing.
-pathParser' :: (Parser ByteString -> Parser [ByteString]) -> URIParser ByteString
-pathParser' repeatParser = (urlDecodeQuery . mconcat <$> repeatParser segmentParser) `orFailWith` MalformedPath
-  where
-    segmentParser = mconcat <$> sequence [string "/", A.takeWhile (inClass pchar)]
+segmentNZParser :: Parser ByteString
+segmentNZParser = A.takeWhile1 (inClass pchar)
 
--------------------------------------------------------------------------------
+segmentNZNCParser :: Parser ByteString
+segmentNZNCParser = A.takeWhile1 (inClass $ pctEncoded ++ subDelims ++ "@" ++ unreserved)
 
--- | Parses the first segment of a path section of a relative-path
--- reference.  See RFC 3986, Section 4.2.
--- firstRelRefSegmentParser :: URIParser ByteString
-firstRelRefSegmentParser :: URIParser ByteString
-firstRelRefSegmentParser = A.takeWhile (inClass (pchar \\ ":")) `orFailWith` MalformedPath
 
 -------------------------------------------------------------------------------
 
@@ -996,3 +997,8 @@ rl2L (RL as) = reverse as
 unsnoc :: RL a -> RL a
 unsnoc (RL []) = RL []
 unsnoc (RL (_ : xs)) = RL xs
+
+
+sequenceM :: (Semigroup a, Monoid a, Traversable t, Monad m) => t (m a) -> m a
+sequenceM = fmap (foldr (<>) mempty) . sequence
+

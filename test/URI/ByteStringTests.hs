@@ -171,6 +171,14 @@ parseUriTests =
             "/."
             (Query [])
             Nothing,
+      parseTestURI strictURIParserOptions "file:c:/foo" $
+        Right $
+          URI
+            (Scheme "file")
+            Nothing
+            "c:/foo"
+            (Query [])
+            Nothing,
       roundtripTestURI strictURIParserOptions "ftp://ftp.is.co.za/rfc/rfc1808.txt",
       roundtripTestURI strictURIParserOptions "http://www.ietf.org/rfc/rfc2396.txt",
       roundtripTestURI strictURIParserOptions "mailto:John.Doe@example.com",
