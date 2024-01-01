@@ -80,8 +80,29 @@ parseUriTests =
           (Scheme "https")
           (Just (Authority (Just (UserInfo "user" "pass:wo rd")) (Host "www.example.org") Nothing))
           ""
-          (Query [("foo", "bar"), ("foo", "baz quux")])
+          (Query [("foo", "bar"), ("foo", "baz+quux")])
           (Just "frag"),
+      testParses "https://user@www.example.org" $
+        URI
+          (Scheme "https")
+          (Just (Authority (Just (UserInfo "user" "")) (Host "www.example.org") Nothing))
+          ""
+          (Query [])
+          Nothing,
+      testParses "https://@www.example.org" $
+        URI
+          (Scheme "https")
+          (Just (Authority (Just (UserInfo "" "")) (Host "www.example.org") Nothing))
+          ""
+          (Query [])
+          Nothing,
+      testParses "https://::@www.example.org" $
+        URI
+          (Scheme "https")
+          (Just (Authority (Just (UserInfo "" ":")) (Host "www.example.org") Nothing))
+          ""
+          (Query [])
+          Nothing,
       -- trailing &
       testParses "http://www.example.org?foo=bar&" $
         URI
@@ -171,6 +192,18 @@ parseUriTests =
             "/."
             (Query [])
             Nothing,
+      parseTestURI strictURIParserOptions "file:c:/foo" $
+        Right $
+          URI
+            (Scheme "file")
+            Nothing
+            "c:/foo"
+            (Query [])
+            Nothing,
+      parseTestURI strictURIParserOptions "file:///foo/%F" $
+        Left MalformedPath,
+      parseTestURI strictURIParserOptions "file:///foo/?foo=%F" $
+        Left MalformedQuery,
       roundtripTestURI strictURIParserOptions "ftp://ftp.is.co.za/rfc/rfc1808.txt",
       roundtripTestURI strictURIParserOptions "http://www.ietf.org/rfc/rfc2396.txt",
       roundtripTestURI strictURIParserOptions "mailto:John.Doe@example.com",

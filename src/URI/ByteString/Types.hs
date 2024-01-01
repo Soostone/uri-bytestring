@@ -169,7 +169,7 @@ type RelativeRef = URIRef Relative
 -- | Options for the parser. You will probably want to use either
 -- "strictURIParserOptions" or "laxURIParserOptions"
 data URIParserOptions = URIParserOptions
-  { upoValidQueryChar :: Word8 -> Bool
+  { upoLaxQueryParsing :: Bool
   }
 
 -------------------------------------------------------------------------------
