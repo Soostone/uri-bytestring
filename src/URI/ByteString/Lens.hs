@@ -7,7 +7,6 @@ module URI.ByteString.Lens where
 -------------------------------------------------------------------------------
 import Control.Applicative
 import Data.ByteString (ByteString)
-import Data.Word
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -194,9 +193,9 @@ fragmentL = lens getter setter
 {-# INLINE fragmentL #-}
 
 -------------------------------------------------------------------------------
-upoValidQueryCharL :: Lens' URIParserOptions (Word8 -> Bool)
+upoValidQueryCharL :: Lens' URIParserOptions Bool
 upoValidQueryCharL =
-  lens upoValidQueryChar (\a b -> a {upoValidQueryChar = b})
+  lens upoLaxQueryParsing (\a b -> a {upoLaxQueryParsing = b})
 {-# INLINE upoValidQueryCharL #-}
 
 -------------------------------------------------------------------------------
