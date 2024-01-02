@@ -14,10 +14,11 @@ import Instances.TH.Lift ()
 import Language.Haskell.TH.Quote
 import URI.ByteString
 
+-- $setup
+-- >>> :set -XQuasiQuotes
+
 -- | Allows uri literals via QuasiQuotes language extension.
 --
--- >>> {-# LANGUAGE QuasiQuotes #-}
--- >>> stackage :: URI
 -- >>> stackage = [uri|http://stackage.org|]
 uri :: QuasiQuoter
 uri =
@@ -34,8 +35,6 @@ uri =
 
 -- | Allows relative ref literals via QuasiQuotes language extension.
 --
--- >>> {-# LANGUAGE QuasiQuotes #-}
--- >>> ref :: RelativeRef
 -- >>> ref = [relativeRef|/foo?bar=baz#quux|]
 relativeRef :: QuasiQuoter
 relativeRef =
