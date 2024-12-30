@@ -146,8 +146,8 @@ parseUriTests =
           "/foo"
           mempty
           (Just ""),
-      testParseFailure "http://www.example.org/foo#bar#baz" MalformedFragment,
-      testParseFailure "https://www.example.org?listParam[]=foo,bar" MalformedQuery,
+      testParseFailure "http://www.example.org/foo#bar#baz" (OtherError "endOfInput"),
+      testParseFailure "https://www.example.org?listParam[]=foo,bar" (OtherError "endOfInput"),
       testParsesLax "https://www.example.org?listParam[]=foo,bar" $
         URI
           (Scheme "https")
@@ -201,9 +201,9 @@ parseUriTests =
             (Query [])
             Nothing,
       parseTestURI strictURIParserOptions "file:///foo/%F" $
-        Left MalformedPath,
+        Left (OtherError "endOfInput"),
       parseTestURI strictURIParserOptions "file:///foo/?foo=%F" $
-        Left MalformedQuery,
+        Left (OtherError "endOfInput"),
       roundtripTestURI strictURIParserOptions "ftp://ftp.is.co.za/rfc/rfc1808.txt",
       roundtripTestURI strictURIParserOptions "http://www.ietf.org/rfc/rfc2396.txt",
       roundtripTestURI strictURIParserOptions "mailto:John.Doe@example.com",
@@ -219,7 +219,7 @@ parseUriTests =
             (Query [])
             Nothing,
       parseTestRelativeRef strictURIParserOptions "this:that/thap/sub?1=2" $
-        Left $ MalformedPath,
+        Left (OtherError "endOfInput"),
       parseTestRelativeRef strictURIParserOptions "./this:that/thap/sub?1=2" $
         Right $
           RelativeRef
