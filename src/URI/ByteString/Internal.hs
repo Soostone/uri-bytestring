@@ -356,11 +356,11 @@ c8 = BB.fromChar
 -- >>> parseURI myLaxOptions "http://www.example.org/foo?bar[]=baz"
 -- Right (URI {uriScheme = Scheme {schemeBS = "http"}, uriAuthority = Just (Authority {authorityUserInfo = Nothing, authorityHost = Host {hostBS = "www.example.org"}, authorityPort = Nothing}), uriPath = "/foo", uriQuery = Query {queryPairs = [("bar[]","baz")]}, uriFragment = Nothing})
 parseURI :: URIParserOptions -> ByteString -> Either URIParseError (URIRef Absolute)
-parseURI opts = parseOnly' OtherError (uriParser' opts <* Parser' endOfInput)
+parseURI opts = parseOnly' OtherError (uriParser' opts)
 
 -- | Like 'parseURI', but do not parse scheme.
 parseRelativeRef :: URIParserOptions -> ByteString -> Either URIParseError (URIRef Relative)
-parseRelativeRef opts = parseOnly' OtherError (relativeRefParser' opts <* Parser' endOfInput)
+parseRelativeRef opts = parseOnly' OtherError (relativeRefParser' opts)
 
 -------------------------------------------------------------------------------
 
@@ -370,8 +370,6 @@ type URIParser = Parser' URIParseError
 -------------------------------------------------------------------------------
 
 -- | Underlying attoparsec parser. Useful for composing with your own parsers.
---
--- May not consume all input. You may want to combine it with @endOfInput@.
 uriParser :: URIParserOptions -> Parser (URIRef Absolute)
 uriParser = unParser' . uriParser'
 
@@ -385,13 +383,14 @@ uriParser' opts = do
   (authority, path) <- hierPartParser
   query <- queryParser opts
   frag <- mFragmentParser
+  case frag of
+    Just _ -> endOfInput `orFailWith` MalformedFragment
+    Nothing -> endOfInput `orFailWith` MalformedQuery
   return $ URI scheme authority path query frag
 
 -------------------------------------------------------------------------------
 
 -- | Underlying attoparsec parser. Useful for composing with your own parsers.
---
--- May not consume all input. You may want to combine it with @endOfInput@.
 relativeRefParser :: URIParserOptions -> Parser (URIRef Relative)
 relativeRefParser = unParser' . relativeRefParser'
 
@@ -403,6 +402,9 @@ relativeRefParser' opts = do
   (authority, path) <- relativePartParser
   query <- queryParser opts
   frag <- mFragmentParser
+  case frag of
+    Just _ -> endOfInput `orFailWith` MalformedFragment
+    Nothing -> endOfInput `orFailWith` MalformedQuery
   return $ RelativeRef authority path query frag
 
 -------------------------------------------------------------------------------
@@ -617,7 +619,7 @@ queryParser opts = do
     Just c
       | c == question -> skip' 1 *> itemsParser
       | c == hash -> pure mempty
-      | otherwise -> pure mempty
+      | otherwise -> fail' MalformedPath
     _ -> pure mempty
   where
     itemsParser = Query . filter neQuery <$> A.sepBy' (queryItemParser opts) (word8' ampersand)
