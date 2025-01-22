@@ -18,7 +18,6 @@ import qualified Data.Map.Strict as M
 import Data.Monoid
 import Data.Semigroup as Semigroup
 import Data.Typeable
-import Data.Word
 import GHC.Generics
 import Instances.TH.Lift ()
 -------------------------------------------------------------------------------

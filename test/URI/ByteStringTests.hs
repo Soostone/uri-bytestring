@@ -219,7 +219,8 @@ parseUriTests =
             (Query [])
             Nothing,
       parseTestRelativeRef strictURIParserOptions "this:that/thap/sub?1=2" $
-        Left $ MalformedPath,
+        Left $
+          MalformedPath,
       parseTestRelativeRef strictURIParserOptions "./this:that/thap/sub?1=2" $
         Right $
           RelativeRef
@@ -536,9 +537,9 @@ normalizeURITests =
     ]
   where
     o = noNormalization
-    normalizeURIBS opts bs =
-      let Right x = parseURI laxURIParserOptions bs
-       in normalizeURIRef' opts x
+    normalizeURIBS opts bs = case parseURI laxURIParserOptions bs of
+      Right x -> normalizeURIRef' opts x
+      Left e -> error ("Test error, " <> show bs <> " did not parse: " <> show e)
 
 trippingShow ::
   ( Show a,
