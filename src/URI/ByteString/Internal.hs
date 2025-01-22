@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE LambdaCase #-}
 
 module URI.ByteString.Internal where
 
@@ -28,7 +29,6 @@ import Data.List
     intersperse,
     sortBy,
     stripPrefix,
-    (\\),
   )
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -50,7 +50,7 @@ import URI.ByteString.Types
 strictURIParserOptions :: URIParserOptions
 strictURIParserOptions =
   URIParserOptions
-    { upoValidQueryChar = validForQuery
+    { upoLaxQueryParsing = False
     }
 
 -------------------------------------------------------------------------------
@@ -62,7 +62,7 @@ strictURIParserOptions =
 laxURIParserOptions :: URIParserOptions
 laxURIParserOptions =
   URIParserOptions
-    { upoValidQueryChar = validForQueryLax
+    { upoLaxQueryParsing = True
     }
 
 -------------------------------------------------------------------------------
@@ -380,8 +380,13 @@ uriParser' :: URIParserOptions -> URIParser (URIRef Absolute)
 uriParser' opts = do
   scheme <- schemeParser
   void $ word8 colon `orFailWith` MalformedScheme MissingColon
-  RelativeRef authority path query fragment <- relativeRefParser' opts
-  return $ URI scheme authority path query fragment
+  (authority, path) <- hierPartParser
+  query <- queryParser opts
+  frag <- mFragmentParser
+  case frag of
+    Just _ -> endOfInput `orFailWith` MalformedFragment
+    Nothing -> endOfInput `orFailWith` MalformedQuery
+  return $ URI scheme authority path query frag
 
 -------------------------------------------------------------------------------
 
@@ -394,7 +399,7 @@ relativeRefParser = unParser' . relativeRefParser'
 -- | Toplevel parser for relative refs
 relativeRefParser' :: URIParserOptions -> URIParser (URIRef Relative)
 relativeRefParser' opts = do
-  (authority, path) <- hierPartParser <|> rrPathParser
+  (authority, path) <- relativePartParser
   query <- queryParser opts
   frag <- mFragmentParser
   case frag of
@@ -415,55 +420,61 @@ schemeParser = do
 
 -------------------------------------------------------------------------------
 
--- | Hier part immediately follows the schema and encompasses the
--- authority and path sections.
+-- | Corresponds to 'hier-part' in RFC 3986 section 3.
 hierPartParser :: URIParser (Maybe Authority, ByteString)
 hierPartParser =
   authWithPathParser
-    <|> pathAbsoluteParser
-    <|> pathRootlessParser
-    <|> pathEmptyParser
+    <|> ((Nothing,) <$> pathAbsoluteParser `orFailWith` MalformedPath)
+    <|> ((Nothing,) <$> pathRootlessParser `orFailWith` MalformedPath)
+    <|> ((Nothing,) <$> pathEmptyParser    `orFailWith` MalformedPath)
 
 -------------------------------------------------------------------------------
 
--- | Relative references have awkward corner cases.  See
--- 'firstRelRefSegmentParser'.
-rrPathParser :: URIParser (Maybe Authority, ByteString)
-rrPathParser =
-  (Nothing,)
-    <$> ((<>) <$> firstRelRefSegmentParser <*> pathParser)
+-- | Corresponds to 'relative-part' in RFC 3986 section 4.2.
+relativePartParser :: URIParser (Maybe Authority, ByteString)
+relativePartParser =
+  authWithPathParser
+    <|> ((Nothing,) <$> pathAbsoluteParser `orFailWith` MalformedPath)
+    <|> ((Nothing,) <$> pathNoSchemeParser `orFailWith` MalformedPath)
+    <|> ((Nothing,) <$> pathEmptyParser    `orFailWith` MalformedPath)
 
 -------------------------------------------------------------------------------
 
 -- | See the "authority path-abempty" grammar in the RFC
 authWithPathParser :: URIParser (Maybe Authority, ByteString)
-authWithPathParser = string' "//" *> ((,) <$> mAuthorityParser <*> pathParser)
+authWithPathParser = string' "//" *> ((,) <$> mAuthorityParser <*> (pathAbEmptyParser `orFailWith` MalformedPath))
+
+-------------------------------------------------------------------------------
+
+-- | See the "path-abempty" grammar in the RFC.
+pathAbEmptyParser :: Parser ByteString
+pathAbEmptyParser = mconcat <$> A.many' (sequenceM [string "/", segmentParser])
 
 -------------------------------------------------------------------------------
 
 -- | See the "path-absolute" grammar in the RFC. Essentially a special
 -- case of rootless.
-pathAbsoluteParser :: URIParser (Maybe Authority, ByteString)
-pathAbsoluteParser = string' "/" *> pathRootlessParser
+pathAbsoluteParser :: Parser ByteString
+pathAbsoluteParser = sequenceM [string "/", pathRootlessParser]
+
+-------------------------------------------------------------------------------
+
+-- | See the "path-noscheme" grammar in the RFC.
+pathNoSchemeParser :: Parser ByteString
+pathNoSchemeParser = sequenceM [segmentNZNCParser, pathAbEmptyParser]
 
 -------------------------------------------------------------------------------
 
 -- | See the "path-rootless" grammar in the RFC.
-pathRootlessParser :: URIParser (Maybe Authority, ByteString)
-pathRootlessParser = (,) <$> pure Nothing <*> pathParser1
+pathRootlessParser :: Parser ByteString
+pathRootlessParser = sequenceM [segmentNZParser, pathAbEmptyParser]
 
 -------------------------------------------------------------------------------
 
 -- | See the "path-empty" grammar in the RFC. Must not be followed
 -- with a path-valid char.
-pathEmptyParser :: URIParser (Maybe Authority, ByteString)
-pathEmptyParser = do
-  nextChar <- peekWord8 `orFailWith` OtherError "impossible peekWord8 error"
-  case nextChar of
-    Just c -> guard (notInClass pchar c) >> return emptyCase
-    _ -> return emptyCase
-  where
-    emptyCase = (Nothing, mempty)
+pathEmptyParser :: Parser ByteString
+pathEmptyParser = (const BS.empty <$> pcharNotParser) <|> (const BS.empty <$> endOfInput)
 
 -------------------------------------------------------------------------------
 
@@ -481,11 +492,12 @@ userInfoParser = (uiTokenParser <* word8 atSym) `orFailWith` MalformedUserInfo
   where
     atSym = 64
     uiTokenParser = do
-      ui <- A.takeWhile1 validForUserInfo
-      let (user, passWithColon) = BS.break (== colon) $ urlDecode' ui
-      let pass = BS.drop 1 passWithColon
+      user <- manyC (pctEncodedParser <|> satisfyClass (subDelims ++ unreserved))
+      pass <- passParser <|> pure BS.empty
       return $ UserInfo user pass
-    validForUserInfo = inClass $ pctEncoded ++ subDelims ++ (':' : unreserved)
+    passParser = do
+      _ <- string ":"
+      manyC (pctEncodedParser <|> satisfyClass (subDelims ++ ":" ++ unreserved))
 
 -------------------------------------------------------------------------------
 
@@ -564,9 +576,7 @@ ipV4Parser =
 
 -- | This corresponds to the hostname, e.g. www.example.org
 regNameParser :: Parser ByteString
-regNameParser = urlDecode' <$> A.takeWhile1 (inClass validForRegName)
-  where
-    validForRegName = pctEncoded ++ subDelims ++ unreserved
+regNameParser = many1C (pctEncodedParser <|> satisfyClass (subDelims <> unreserved))
 
 -------------------------------------------------------------------------------
 
@@ -581,34 +591,19 @@ mPortParser = word8' colon `thenJust` portParser
 portParser :: URIParser Port
 portParser = (Port <$> A.decimal) `orFailWith` MalformedPort
 
--------------------------------------------------------------------------------
-
--- | Path with any number of segments
-pathParser :: URIParser ByteString
-pathParser = pathParser' A.many'
 
 -------------------------------------------------------------------------------
 
--- | Path with at least 1 segment
-pathParser1 :: URIParser ByteString
-pathParser1 = pathParser' A.many1'
 
--------------------------------------------------------------------------------
+segmentParser :: Parser ByteString
+segmentParser = manyC pcharParser
 
--- | Parses the path section of a url. Note that while this can take
--- percent-encoded characters, it does not itself decode them while parsing.
-pathParser' :: (Parser ByteString -> Parser [ByteString]) -> URIParser ByteString
-pathParser' repeatParser = (urlDecodeQuery . mconcat <$> repeatParser segmentParser) `orFailWith` MalformedPath
-  where
-    segmentParser = mconcat <$> sequence [string "/", A.takeWhile (inClass pchar)]
+segmentNZParser :: Parser ByteString
+segmentNZParser = many1C pcharParser
 
--------------------------------------------------------------------------------
+segmentNZNCParser :: Parser ByteString
+segmentNZNCParser = many1C (pctEncodedParser <|> satisfyClass (subDelims <> "@" <> unreserved))
 
--- | Parses the first segment of a path section of a relative-path
--- reference.  See RFC 3986, Section 4.2.
--- firstRelRefSegmentParser :: URIParser ByteString
-firstRelRefSegmentParser :: URIParser ByteString
-firstRelRefSegmentParser = A.takeWhile (inClass (pchar \\ ":")) `orFailWith` MalformedPath
 
 -------------------------------------------------------------------------------
 
@@ -636,22 +631,26 @@ queryParser opts = do
 -- into a key/value pair as per convention, with the value being
 -- optional. & separators need to be handled further up.
 queryItemParser :: URIParserOptions -> URIParser (ByteString, ByteString)
-queryItemParser opts = do
-  s <- A.takeWhile (upoValidQueryChar opts) `orFailWith` MalformedQuery
-  if BS.null s
+queryItemParser opts = (`orFailWith` MalformedQuery) $ do
+  let parser = if upoLaxQueryParsing opts then queryLaxItemParser else queryItemParser'
+  k <- manyC parser
+  if BS.null k
     then return (mempty, mempty)
     else do
-      let (k, vWithEquals) = BS.break (== equals) s
-      let v = BS.drop 1 vWithEquals
-      return (urlDecodeQuery k, urlDecodeQuery v)
+      A.peekWord8 >>= \case
+        Just 61 -> do
+          _ <- string "="
+          v <- manyC parser
+          return (k, v)
+        _ -> return (k, mempty)
 
 -------------------------------------------------------------------------------
-validForQuery :: Word8 -> Bool
-validForQuery = inClass ('?' : '/' : delete '&' pchar)
+queryItemParser' :: Parser ByteString
+queryItemParser' = pctEncodedParser <|> satisfyClass ('?' : '/' : (delete '=' $ delete '&' (subDelims ++ ":@" ++ unreserved)))
 
 -------------------------------------------------------------------------------
-validForQueryLax :: Word8 -> Bool
-validForQueryLax = notInClass "&#"
+queryLaxItemParser :: Parser ByteString
+queryLaxItemParser = pctEncodedParser <|> satisfyNotClass "&#="
 
 -------------------------------------------------------------------------------
 
@@ -663,9 +662,7 @@ mFragmentParser = mParse $ word8' hash *> fragmentParser
 
 -- | The final piece of a uri, e.g. #fragment, minus the #.
 fragmentParser :: URIParser ByteString
-fragmentParser = Parser' $ A.takeWhile validFragmentWord
-  where
-    validFragmentWord = inClass ('?' : '/' : pchar)
+fragmentParser = Parser' $ manyC (pcharParser <|> satisfyClass ['?', '/'])
 
 -------------------------------------------------------------------------------
 
@@ -686,8 +683,18 @@ isDigit :: Word8 -> Bool
 isDigit = inClass digit
 
 -------------------------------------------------------------------------------
-pchar :: String
-pchar = pctEncoded ++ subDelims ++ ":@" ++ unreserved
+
+pcharParser :: Parser ByteString
+pcharParser = pctEncodedParser <|> satisfyClass (subDelims ++ ":@" ++ unreserved)
+
+pcharNotParser :: Parser ByteString
+pcharNotParser = notPctEncodedParser <|> satisfyNotClass (subDelims ++ ":@" ++ unreserved)
+ where
+  notPctEncodedParser = do
+    w <- peekWord8
+    case w of
+      Just 37 -> satisfyNotClass (subDelims ++ ":@" ++ unreserved)
+      _       -> fail "not percent encoded"
 
 -------------------------------------------------------------------------------
 -- Very important!  When concatenating this to other strings to make larger
@@ -715,6 +722,18 @@ ord8 = fromIntegral . ord
 -- parser to ensure pct-encoded never exceeds 2 hexdigs after
 pctEncoded :: String
 pctEncoded = "%"
+
+pctEncodedParser :: Parser ByteString
+pctEncodedParser = string "%" *> (decode <$> A.satisfy hexDigit <*> A.satisfy hexDigit)
+ where
+  decode w1 w2 = BS.singleton $ combine (hexVal w1) (hexVal w2)
+  hexVal w
+    | 48 <= w && w <= 57  = w - 48 -- 0 - 9
+    | 65 <= w && w <= 70  = w - 55 -- A - F
+    | 97 <= w && w <= 102 = w - 87 -- a - f
+    | otherwise           = error $ "Not a hex value: " <> show w
+  combine a b = shiftL a 4 .|. b
+
 
 -------------------------------------------------------------------------------
 subDelims :: String
@@ -767,30 +786,6 @@ period = 46
 -------------------------------------------------------------------------------
 slash :: Word8
 slash = 47
-
--------------------------------------------------------------------------------
-
--- | ByteString Utilities
-
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
-
--- | Decoding specifically for the query string, which decodes + as
--- space. Shorthand for @urlDecode True@
-urlDecodeQuery :: ByteString -> ByteString
-urlDecodeQuery = urlDecode plusToSpace
-  where
-    plusToSpace = True
-
--------------------------------------------------------------------------------
-
--- | Decode any part of the URL besides the query, which decodes + as
--- space.
-urlDecode' :: ByteString -> ByteString
-urlDecode' = urlDecode plusToSpace
-  where
-    plusToSpace = False
 
 -------------------------------------------------------------------------------
 
@@ -912,38 +907,6 @@ fmapL :: (a -> b) -> Either a r -> Either b r
 fmapL f = either (Left . f) Right
 
 -------------------------------------------------------------------------------
-
--- | This function was extracted from the @http-types@ package. The
--- license can be found in licenses/http-types/LICENSE
-urlDecode ::
-  -- | Whether to decode '+' to ' '
-  Bool ->
-  BS.ByteString ->
-  BS.ByteString
-urlDecode replacePlus z = fst $ BS.unfoldrN (BS.length z) go z
-  where
-    go bs' =
-      case BS.uncons bs' of
-        Nothing -> Nothing
-        Just (43, ws) | replacePlus -> Just (32, ws) -- plus to space
-        Just (37, ws) -> Just $
-          fromMaybe (37, ws) $ do
-            -- percent
-            (x, xs) <- BS.uncons ws
-            x' <- hexVal x
-            (y, ys) <- BS.uncons xs
-            y' <- hexVal y
-            Just (combine x' y', ys)
-        Just (w, ws) -> Just (w, ws)
-    hexVal w
-      | 48 <= w && w <= 57 = Just $ w - 48 -- 0 - 9
-      | 65 <= w && w <= 70 = Just $ w - 55 -- A - F
-      | 97 <= w && w <= 102 = Just $ w - 87 -- a - f
-      | otherwise = Nothing
-    combine :: Word8 -> Word8 -> Word8
-    combine a b = shiftL a 4 .|. b
-
--------------------------------------------------------------------------------
 --TODO: keep an eye on perf here. seems like a good use case for a DList. the word8 list could be a set/hashset
 
 -- | Percent-encoding for URLs. Specify a list of additional
@@ -996,3 +959,23 @@ rl2L (RL as) = reverse as
 unsnoc :: RL a -> RL a
 unsnoc (RL []) = RL []
 unsnoc (RL (_ : xs)) = RL xs
+
+
+sequenceM :: (Semigroup a, Monoid a, Traversable t, Monad m) => t (m a) -> m a
+sequenceM = fmap (foldr (<>) mempty) . sequence
+
+satisfy' :: (Word8 -> Bool) -> Parser ByteString
+satisfy' f = BS.singleton <$> A.satisfy f
+
+many1C :: (Monoid a, Semigroup a, MonadPlus m) => m a -> m a
+many1C = fmap mconcat . A.many1
+
+manyC :: (Monoid a, Semigroup a, MonadPlus m) => m a -> m a
+manyC = fmap mconcat . A.many'
+
+satisfyClass :: String -> Parser ByteString
+satisfyClass = satisfy' . inClass
+
+satisfyNotClass :: String -> Parser ByteString
+satisfyNotClass = satisfy' . notInClass
+

@@ -95,7 +95,7 @@ genURIParserOptions = do
   cointoss <- Gen.bool
   pure $
     URIParserOptions
-      { upoValidQueryChar = const cointoss
+      { upoLaxQueryParsing = cointoss
       }
 
 genURINormalizationOptions :: Gen URINormalizationOptions

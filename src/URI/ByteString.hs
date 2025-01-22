@@ -70,8 +70,6 @@ module URI.ByteString
     normalizeURIRef',
 
     -- * Low level utility functions
-    urlDecode,
-    urlDecodeQuery,
     urlEncodeQuery,
     urlEncodePath,
     urlEncode,
