@@ -1,3 +1,6 @@
+0.4.0.0
+* [Improve spec compliance ](https://github.com/Soostone/uri-bytestring/pull/64). Thanks to [hasufell](https://github.com/hasufell).
+
 0.3.3.1
 * Remove >= from cabal version. Thanks to [felixonmars](https://github.com/felixonmars).
 * Conditionally drop dependency on semigroups library. Thanks to [felixonmars](https://github.com/felixonmars).
