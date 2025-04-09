@@ -303,7 +303,7 @@ serializeQuery' opts = BB.toByteString . serializeQuery opts
 
 -------------------------------------------------------------------------------
 serializeFragment :: Maybe ByteString -> Builder
-serializeFragment = maybe mempty (\s -> c8 '#' <> bs s)
+serializeFragment = maybe mempty (\s -> c8 '#' <> urlEncodeQuery s)
 
 serializeFragment' :: Maybe ByteString -> ByteString
 serializeFragment' = BB.toByteString . serializeFragment

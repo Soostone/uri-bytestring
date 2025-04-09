@@ -210,6 +210,11 @@ parseUriTests =
       roundtripTestURI strictURIParserOptions "news:comp.infosystems.www.servers.unix",
       roundtripTestURI strictURIParserOptions "tel:+1-816-555-1212",
       roundtripTestURI strictURIParserOptions "telnet://192.0.2.16:80/",
+      -- percent encoding in queries and fragments
+      roundtripTestURI strictURIParserOptions "http://example.com/foo#bar%20baz",
+      roundtripTestURI strictURIParserOptions "http://example.com/foo?bar%20baz=quux",
+      roundtripTestURI strictURIParserOptions "http://example.com/foo?bar=baz%20quux",
+      roundtripTestURI strictURIParserOptions "http://example.com/foo?bar=baz%20quux#bar%20baz",
       -- RFC 3986, Section 4.2
       parseTestRelativeRef strictURIParserOptions "verysimple" $
         Right $
