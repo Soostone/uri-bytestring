@@ -69,7 +69,16 @@ laxURIParserOptions =
 
 -- | All normalization options disabled
 noNormalization :: URINormalizationOptions
-noNormalization = URINormalizationOptions False False False False False False False httpDefaultPorts
+noNormalization = URINormalizationOptions
+  { unoDowncaseScheme = False,
+    unoDowncaseHost = False,
+    unoDropDefPort = False,
+    unoSlashEmptyPath = False,
+    unoDropExtraSlashes = False,
+    unoSortParameters = False,
+    unoRemoveDotSegments = False,
+    unoDefaultPorts = httpDefaultPorts
+  }
 
 -------------------------------------------------------------------------------
 
@@ -117,7 +126,16 @@ httpNormalization =
 
 -- | All options enabled
 aggressiveNormalization :: URINormalizationOptions
-aggressiveNormalization = URINormalizationOptions True True True True True True True httpDefaultPorts
+aggressiveNormalization = URINormalizationOptions
+  { unoDowncaseScheme = True,
+    unoDowncaseHost = True,
+    unoDropDefPort = True,
+    unoSlashEmptyPath = True,
+    unoDropExtraSlashes = True,
+    unoSortParameters = True,
+    unoRemoveDotSegments = True,
+    unoDefaultPorts = httpDefaultPorts
+  }
 
 -------------------------------------------------------------------------------
 
@@ -285,7 +303,7 @@ serializeQuery' opts = BB.toByteString . serializeQuery opts
 
 -------------------------------------------------------------------------------
 serializeFragment :: Maybe ByteString -> Builder
-serializeFragment = maybe mempty (\s -> c8 '#' <> bs s)
+serializeFragment = maybe mempty (\s -> c8 '#' <> urlEncodeQuery s)
 
 serializeFragment' :: Maybe ByteString -> ByteString
 serializeFragment' = BB.toByteString . serializeFragment
