@@ -1,3 +1,6 @@
+0.4.0.1
+* [Fix fragment serilization bug](https://github.com/Soostone/uri-bytestring/pull/65). 0.4.0.0 percent-decoded fragments on parse but did not percent-encode them on serialization, which made it possible for some URLs to not roundtrip.
+
 0.4.0.0
 * [Improve spec compliance ](https://github.com/Soostone/uri-bytestring/pull/64). Thanks to [hasufell](https://github.com/hasufell).
 
