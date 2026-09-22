@@ -1,3 +1,4 @@
+cabal-version:       1.16
 name:                uri-bytestring
 version:             0.4.0.1
 synopsis:            Haskell URI parsing as ByteStrings
@@ -10,7 +11,6 @@ maintainer:          Michael Xavier <michael.xavier@soostone.com>
 copyright:           Soostone Inc.
 category:            Web
 build-type:          Simple
-cabal-version:       1.16
 homepage:            https://github.com/Soostone/uri-bytestring
 bug-reports:         https://github.com/Soostone/uri-bytestring/issues
 Tested-With:         GHC >= 9.4 && < 9.15
