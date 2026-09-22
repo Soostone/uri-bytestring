@@ -6,7 +6,10 @@ module URI.ByteString.Lens where
 
 -------------------------------------------------------------------------------
 import Control.Applicative
+import Data.Bifunctor (second)
 import Data.ByteString (ByteString)
+import qualified Data.ByteString
+import Data.Word (Word8)
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -60,18 +63,25 @@ authorityPortL =
 {-# INLINE authorityPortL #-}
 
 -------------------------------------------------------------------------------
+userInfoBSL ::
+  Lens' UserInfo ByteString
+userInfoBSL =
+  lens userInfoBS (\a b -> a {userInfoBS = b})
+{-# INLINE userInfoBSL #-}
+
+-------------------------------------------------------------------------------
 uiUsernameL ::
   Lens' UserInfo ByteString
-uiUsernameL =
-  lens uiUsername (\a b -> a {uiUsername = b})
+uiUsernameL = userInfoBSL . splitColonL . _1
 {-# INLINE uiUsernameL #-}
+{-# DEPRECATED uiUsernameL "Use 'userInfoBSL' instead" #-}
 
 -------------------------------------------------------------------------------
 uiPasswordL ::
   Lens' UserInfo ByteString
-uiPasswordL =
-  lens uiPassword (\a b -> a {uiPassword = b})
+uiPasswordL = userInfoBSL . splitColonL . _2
 {-# INLINE uiPasswordL #-}
+{-# DEPRECATED uiPasswordL "Use 'userInfoBSL' instead" #-}
 
 -------------------------------------------------------------------------------
 queryPairsL ::
@@ -210,3 +220,27 @@ type Lens' s a = Lens s s a a
 lens :: (s -> a) -> (s -> b -> t) -> Lens s t a b
 lens sa sbt afb s = sbt s <$> afb (sa s)
 {-# INLINE lens #-}
+
+-------------------------------------------------------------------------------
+_1 :: Lens (a, c) (b, c) a b
+_1 = lens fst (\(_x, y) x' -> (x', y))
+{-# INLINE _1 #-}
+
+-------------------------------------------------------------------------------
+_2 :: Lens (c, a) (c, b) a b
+_2 = lens snd (\(x, _y) y' -> (x, y'))
+{-# INLINE _2 #-}
+
+-------------------------------------------------------------------------------
+splitColonL :: Lens' ByteString (ByteString, ByteString)
+splitColonL = lens f g
+  where
+    f :: ByteString -> (ByteString, ByteString)
+    f = second (Data.ByteString.drop 1) . Data.ByteString.break (== colon)
+
+    g :: s -> (ByteString, ByteString) -> ByteString
+    g _ (bs1, bs2) = bs1 <> Data.ByteString.singleton colon <> bs2
+
+    colon :: Word8
+    colon = 58
+{-# INLINE splitColonL #-}

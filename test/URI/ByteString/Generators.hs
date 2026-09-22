@@ -22,14 +22,7 @@ import Prelude
 -------------------------------------------------------------------------------
 
 genUserInfo :: Gen UserInfo
-genUserInfo = do
-  username <- Gen.utf8 (Range.linear 0 100) Gen.ascii
-  password <- Gen.utf8 (Range.linear 0 100) Gen.ascii
-  pure $
-    UserInfo
-      { uiUsername = username,
-        uiPassword = password
-      }
+genUserInfo = UserInfo <$> Gen.utf8 (Range.linear 0 100) Gen.ascii
 
 genAuthority :: Gen Authority
 genAuthority = do

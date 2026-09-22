@@ -78,28 +78,28 @@ parseUriTests =
       testParses "https://user:pass:wo%20rd@www.example.org?foo=bar&foo=baz+quux#frag" $
         URI
           (Scheme "https")
-          (Just (Authority (Just (UserInfo "user" "pass:wo rd")) (Host "www.example.org") Nothing))
+          (Just (Authority (Just (UserInfo "user:pass:wo rd")) (Host "www.example.org") Nothing))
           ""
           (Query [("foo", "bar"), ("foo", "baz+quux")])
           (Just "frag"),
       testParses "https://user@www.example.org" $
         URI
           (Scheme "https")
-          (Just (Authority (Just (UserInfo "user" "")) (Host "www.example.org") Nothing))
+          (Just (Authority (Just (UserInfo "user")) (Host "www.example.org") Nothing))
           ""
           (Query [])
           Nothing,
       testParses "https://@www.example.org" $
         URI
           (Scheme "https")
-          (Just (Authority (Just (UserInfo "" "")) (Host "www.example.org") Nothing))
+          (Just (Authority (Just (UserInfo "")) (Host "www.example.org") Nothing))
           ""
           (Query [])
           Nothing,
       testParses "https://::@www.example.org" $
         URI
           (Scheme "https")
-          (Just (Authority (Just (UserInfo "" ":")) (Host "www.example.org") Nothing))
+          (Just (Authority (Just (UserInfo "::")) (Host "www.example.org") Nothing))
           ""
           (Query [])
           Nothing,
@@ -293,18 +293,12 @@ lensTests =
           port <- forAll (Gen.maybe genPort)
           (authority ^. authorityPortL === authorityPort authority)
           (authority & authorityPortL .~ port) === authority {authorityPort = port},
-      testProperty "uiUsernameL Lens" $
+      testProperty "userInfoBSL Lens" $
         property $ do
-          ui <- forAll genUserInfo
-          bs <- forAll genBS
-          (ui ^. uiUsernameL === uiUsername ui)
-          (ui & uiUsernameL .~ bs) === ui {uiUsername = bs},
-      testProperty "uiPasswordL Lens" $
-        property $ do
-          ui <- forAll genUserInfo
-          bs <- forAll genBS
-          (ui ^. uiPasswordL === uiPassword ui)
-          (ui & uiPasswordL .~ bs) === ui {uiPassword = bs},
+          wrapped <- forAll genUserInfo
+          UserInfo bs' <- forAll genUserInfo
+          (wrapped ^. userInfoBSL) === userInfoBS wrapped
+          (wrapped & userInfoBSL .~ bs') === wrapped {userInfoBS = bs'},
       testProperty "uriSchemeL Lens" $
         property $ do
           uri <- forAll genAbsoluteURIRef
@@ -434,7 +428,7 @@ serializeURITests =
   testGroup
     "serializeURIRef"
     [ testCase "renders userinfo correctly" $ do
-        let ui = UserInfo "user" "pass"
+        let ui = UserInfo "user:pass"
         let uri =
               URI
                 (Scheme "http")
@@ -455,7 +449,7 @@ serializeURITests =
         let res = BB.toLazyByteString (serializeURIRef uri)
         res @?= "http://www.example.org:123/weird%20path",
       testCase "encodes relative refs" $ do
-        let ui = UserInfo "user" "pass"
+        let ui = UserInfo "user:pass"
         let uri =
               RelativeRef
                 (Just (Authority (Just ui) (Host "www.example.org") (Just port)))
