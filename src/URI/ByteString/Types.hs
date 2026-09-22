@@ -13,6 +13,7 @@
 module URI.ByteString.Types where
 
 -------------------------------------------------------------------------------
+import Control.Exception (Exception(..))
 import Data.ByteString (ByteString)
 import qualified Data.Map.Strict as M
 import Data.Monoid
@@ -207,6 +208,14 @@ data SchemaError
     MissingColon
   deriving (Show, Eq, Read, Generic, Typeable, Enum, Bounded)
 
+instance Exception SchemaError where
+  displayException NonAlphaLeading =
+    "Scheme must start with an alphabet character"
+  displayException InvalidChars =
+    "Subsequent characters in the schema were invalid"
+  displayException MissingColon =
+    "Schemas must be followed by a colon"
+
 -------------------------------------------------------------------------------
 data URIParseError
   = MalformedScheme SchemaError
@@ -219,3 +228,21 @@ data URIParseError
   | -- | Catchall for unpredictable errors
     OtherError String
   deriving (Show, Eq, Generic, Read, Typeable)
+
+instance Exception URIParseError where
+  displayException (MalformedScheme schemaError) =
+    displayException schemaError
+  displayException MalformedUserInfo =
+    "Malformed userinfo"
+  displayException MalformedQuery =
+    "Malformed query"
+  displayException MalformedFragment =
+    "Malformed fragment"
+  displayException MalformedHost =
+    "Malformed host"
+  displayException MalformedPort =
+    "Malformed port"
+  displayException MalformedPath =
+    "Malformed path"
+  displayException (OtherError otherError) =
+    otherError
