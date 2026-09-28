@@ -1,5 +1,5 @@
 # uri-bytestring
-[![Build Status](https://travis-ci.org/Soostone/uri-bytestring.svg?branch=master)](https://travis-ci.org/Soostone/uri-bytestring)
+[![Haskell-CI](https://github.com/Soostone/uri-bytestring/actions/workflows/haskell-ci.yml/badge.svg)](https://github.com/Soostone/uri-bytestring/actions/workflows/haskell-ci.yml)
 [![Hackage](https://img.shields.io/hackage/v/uri-bytestring.svg?style=flat)](https://hackage.haskell.org/package/uri-bytestring)
 
 Haskell URI parsing as ByteStrings
