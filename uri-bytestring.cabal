@@ -108,4 +108,4 @@ benchmark bench
 
 source-repository head
   type:     git
-  location: git://github.com/Soostone/uri-bytestring.git
+  location: https://github.com/Soostone/uri-bytestring.git
