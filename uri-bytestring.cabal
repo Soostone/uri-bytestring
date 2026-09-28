@@ -71,17 +71,14 @@ test-suite test
   hs-source-dirs: test
   build-depends:
       uri-bytestring
-    , HUnit
     , tasty
     , tasty-hunit
     , hedgehog
     , tasty-hedgehog
-    , attoparsec
     , base
     , base-compat >= 0.7.0
     , blaze-builder
     , bytestring
-    , transformers
     , containers
     , safe
 
@@ -106,9 +103,7 @@ benchmark bench
     , uri-bytestring
     , criterion
     , deepseq
-    , deepseq-generics
     , network-uri >= 2.6.0.3
-    , bytestring
     , blaze-builder
 
 source-repository head
