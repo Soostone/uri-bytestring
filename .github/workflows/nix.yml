@@ -1,0 +1,23 @@
+# Hand-maintained companion to haskell-ci.yml (which is auto-generated and
+# must not be edited). Not part of the GHC-version matrix: this job keeps
+# flake.nix / flake.lock honest so `nix develop` keeps working. Runs only the
+# host system's suite target — bare `nix flake check` would cross-build all
+# four exposed systems.
+name: Nix flake
+on:
+  - push
+  - pull_request
+  - merge_group
+  - workflow_dispatch
+
+jobs:
+  x86_64-linux:
+    name: Flake suite (x86_64-linux)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      # Installs Nix with flakes enabled.
+      - uses: DeterminateSystems/nix-installer-action@v23
+      - name: Run tasty suite via the flake pin
+        run: nix build .#checks.x86_64-linux.uri-bytestring-test
