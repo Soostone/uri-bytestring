@@ -12,3 +12,5 @@
 4. Please try to write a benchmark if applicable.
 5. If we forget to add you to the Contributors section of the README,
    please let us know!
+6. Nix users can get a reproducible dev environment with `nix develop .`
+   (see flake.nix; stack remains fully supported).
