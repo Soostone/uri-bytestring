@@ -67,10 +67,7 @@ deriving instance Lift Port
 #endif
 
 -------------------------------------------------------------------------------
-data UserInfo = UserInfo
-  { uiUsername :: ByteString,
-    uiPassword :: ByteString
-  }
+newtype UserInfo = UserInfo { userInfoBS :: ByteString}
   deriving (Show, Eq, Generic, Typeable, Ord)
 
 #ifdef LIFT_COMPAT

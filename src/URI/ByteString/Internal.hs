@@ -335,7 +335,7 @@ serializeAuthority' opts mScheme = BB.toByteString . serializeAuthority opts mSc
 
 -------------------------------------------------------------------------------
 serializeUserInfo :: UserInfo -> Builder
-serializeUserInfo UserInfo {..} = bs uiUsername <> c8 ':' <> bs uiPassword <> c8 '@'
+serializeUserInfo UserInfo {..} = bs userInfoBS <> c8 '@'
 
 serializeUserInfo' :: UserInfo -> ByteString
 serializeUserInfo' = BB.toByteString . serializeUserInfo
@@ -514,15 +514,11 @@ mAuthorityParser = mParse authorityParser'
 -- Authentication). Note that this will decode any percent-encoded
 -- data.
 userInfoParser :: URIParser UserInfo
-userInfoParser = (uiTokenParser <* word8 atSym) `orFailWith` MalformedUserInfo
+userInfoParser =
+  (UserInfo <$> parsers <* word8 atSym) `orFailWith` MalformedUserInfo
   where
     atSym = 64
-    uiTokenParser = do
-      user <- manyC (pctEncodedParser <|> satisfyClass (subDelims ++ unreserved))
-      pass <- passParser <|> pure BS.empty
-      return $ UserInfo user pass
-    passParser = do
-      _ <- string ":"
+    parsers =
       manyC (pctEncodedParser <|> satisfyClass (subDelims ++ ":" ++ unreserved))
 
 -------------------------------------------------------------------------------

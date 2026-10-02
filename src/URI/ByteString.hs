@@ -95,6 +95,7 @@ module URI.ByteString
     authorityPortL,
 
     -- ** Lenses over 'UserInfo'
+    userInfoBSL,
     uiUsernameL,
     uiPasswordL,
 
