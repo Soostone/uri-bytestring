@@ -215,7 +215,7 @@ normalizeRelativeRef o@URINormalizationOptions {..} mScheme RelativeRef {..} =
     dropSegs (h : t)
       | unoDropExtraSlashes = h : (filter (not . BS.null) t)
       | otherwise = h : t
-    authority = maybe Monoid.mempty (serializeAuthority o mScheme) rrAuthority
+    authority = maybe Monoid.mempty (\authority' -> BB.fromString "//" <> serializeAuthority o mScheme authority') rrAuthority
     query = serializeQuery o rrQuery
     fragment = serializeFragment rrFragment
 
@@ -310,7 +310,7 @@ serializeFragment' = BB.toByteString . serializeFragment
 
 -------------------------------------------------------------------------------
 serializeAuthority :: URINormalizationOptions -> Maybe Scheme -> Authority -> Builder
-serializeAuthority URINormalizationOptions {..} mScheme Authority {..} = BB.fromString "//" <> userinfo <> bs host <> port
+serializeAuthority URINormalizationOptions {..} mScheme Authority {..} = userinfo <> bs host <> port
   where
     userinfo = maybe mempty serializeUserInfo authorityUserInfo
     host = hCase (hostBS authorityHost)
