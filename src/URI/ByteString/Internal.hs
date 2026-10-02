@@ -380,6 +380,14 @@ parseURI opts = parseOnly' OtherError (uriParser' opts)
 parseRelativeRef :: URIParserOptions -> ByteString -> Either URIParseError (URIRef Relative)
 parseRelativeRef opts = parseOnly' OtherError (relativeRefParser' opts)
 
+-- | Like 'parseURI', but only parse an authority.
+parseAuthority :: ByteString -> Either URIParseError Authority
+parseAuthority = parseOnly' OtherError authorityParser'
+
+-- | Like 'parseURI', but only parse a host.
+parseHost :: ByteString -> Either URIParseError Host
+parseHost = parseOnly' OtherError hostParser'
+
 -------------------------------------------------------------------------------
 
 -- | Convenience alias for a parser that can return URIParseError
@@ -498,7 +506,7 @@ pathEmptyParser = (const BS.empty <$> pcharNotParser) <|> (const BS.empty <$> en
 
 -- | Parser whe
 mAuthorityParser :: URIParser (Maybe Authority)
-mAuthorityParser = mParse authorityParser
+mAuthorityParser = mParse authorityParser'
 
 -------------------------------------------------------------------------------
 
@@ -519,15 +527,27 @@ userInfoParser = (uiTokenParser <* word8 atSym) `orFailWith` MalformedUserInfo
 
 -------------------------------------------------------------------------------
 
+-- | Underlying attoparsec parser. Useful for composing with your own parsers.
+authorityParser :: Parser Authority
+authorityParser = unParser' authorityParser'
+
+-------------------------------------------------------------------------------
+
 -- | Authority consists of host and port
-authorityParser :: URIParser Authority
-authorityParser = Authority <$> mParse userInfoParser <*> hostParser <*> mPortParser
+authorityParser' :: URIParser Authority
+authorityParser' = Authority <$> mParse userInfoParser <*> hostParser' <*> mPortParser
+
+-------------------------------------------------------------------------------
+
+-- | Underlying attoparsec parser. Useful for composing with your own parsers.
+hostParser :: Parser Host
+hostParser = unParser' hostParser'
 
 -------------------------------------------------------------------------------
 
 -- | Parser that can handle IPV6/Future literals, IPV4, and domain names.
-hostParser :: URIParser Host
-hostParser = (Host <$> parsers) `orFailWith` MalformedHost
+hostParser' :: URIParser Host
+hostParser' = (Host <$> parsers) `orFailWith` MalformedHost
   where
     parsers = ipLiteralParser <|> ipV4Parser <|> regNameParser
     ipLiteralParser = word8 oBracket *> (ipVFutureParser <|> ipV6Parser) <* word8 cBracket
